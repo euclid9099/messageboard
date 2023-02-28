@@ -1,0 +1,31 @@
+DEFINE TABLE user SCHEMAFULL
+  PERMISSIONS
+    FOR select FULL, 
+    FOR update WHERE id = $auth.id, 
+    FOR create NONE,
+    FOR delete WHERE $auth.admin OR id = $auth.id;
+--- define FIELD's
+DEFINE FIELD pass ON user TYPE string;
+DEFINE FIELD followers ON user TYPE array;
+DEFINE FIELD admin ON user TYPE bool
+  PERMISSIONS
+    FOR select FULL,
+    FOR create, update, delete WHERE $auth.admin = true;
+DEFINE FIELD username ON user TYPE string;
+DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
+
+
+DEFINE SCOPE global
+  -- the JWT session will be valid for 1 day
+  SESSION 4h
+  -- The optional SIGNUP clause will be run when calling the signup method for this scope
+  -- It is designed to create or add a new record to the database.
+  -- If set, it needs to return a record or a record id
+  -- The variables can be passed in to the signin method
+  SIGNUP ( CREATE user SET username = $username, pass = crypto::argon2::generate($pass), admin = true )
+  -- The optional SIGNIN clause will be run when calling the signin method for this scope
+  -- It is designed to check if a record exists in the database.
+  -- If set, it needs to return a record or a record id
+  -- The variables can be passed in to the signin method
+  SIGNIN ( SELECT * FROM user WHERE username = $username AND crypto::argon2::compare(pass, $pass) )
+  -- this optional clause will be run when calling the signup method for this scope
