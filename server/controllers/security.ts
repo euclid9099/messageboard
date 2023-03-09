@@ -1,8 +1,10 @@
 import Surreal from 'https://deno.land/x/surrealdb@v0.2.0/mod.ts';
 import { Request, Response } from 'https://deno.land/x/oak@v11.1.0/mod.ts';
 
+import { responseSkeleton } from '../helper.ts';
+
 const login = async ({ request, response }: { request: Request; response: Response }) => {
-    try {
+    await responseSkeleton(response, async () => {
         const body = await request.body().value;
         const token: string = await Surreal.Instance.signin({
             NS: 'global',
@@ -12,24 +14,15 @@ const login = async ({ request, response }: { request: Request; response: Respon
             pass: body.password
         });
         await Surreal.Instance.invalidate();
-    
-        response.status = 200;
-        response.body = {
-            "token": token
-        }
-    } catch (e) {
-        response.status = 400
-        response.body = {
-            "message": "malformed request",
-            "error": e
-        }
-    }
+
+        return {token: token};
+    })
 }
 
 const signup = async ({ request, response }: { request: Request; response: Response }) => {
-    try {
+    await responseSkeleton(response, async () => {
         const body = await request.body().value;
-        const result = await Surreal.Instance.query("SELECT * FROM user WHERE username = $username", {username: body.username});
+        const result = await Surreal.Instance.query(`SELECT * FROM user WHERE username = "${body.username}"`);
         if (result[0].result.length > 0) {
             throw new Error(`Username already in use. Try ${request.url.origin}/login`);
         }
@@ -42,21 +35,8 @@ const signup = async ({ request, response }: { request: Request; response: Respo
         });
         await Surreal.Instance.invalidate();
 
-        response.status = 200;
-        response.body = {
-            "token": token
-        }
-    
-    } catch (e) {
-        response.status = 400
-        response.body = {
-            "message": "malformed request",
-            "error": {
-                "name": e.name,
-                "message": e.message
-            }
-        }
-    }
+        return {token: token};
+    })
 }
 
 export {login, signup}

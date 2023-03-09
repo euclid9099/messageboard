@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'https://deno.land/x/oak@v11.1.0/mod.ts';
 import { login, signup } from './controllers/security.ts';
-import { getUsers, getUser, editUser, addPOI, removePOI, deleteUser } from './controllers/user.ts';
+import { getUsers, getUser, editUser, addPOI, removePOI } from './controllers/user.ts';
 
 const router = new Router()
 
@@ -24,7 +24,7 @@ router.get('/users/:id', getUser);          //get one user
 router.patch('/users/:id', editUser);       //update one user data (only as self)
 router.post('/users/:id/addPOI', addPOI);          //add a person of interest
 router.post('/users/:id/removePOI', removePOI);          //add a person of interest
-router.delete('/users/:id', deleteUser);    //delete a user (only as self or admin)
+//router.delete('/users/:id', deleteUser);    //delete doesn't work from deno so I procrastinate this point
 
 
 //posts
