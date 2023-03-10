@@ -18,7 +18,9 @@ DEFINE FIELD admin ON user TYPE bool
 DEFINE FIELD username ON user TYPE string;
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
 
-CREATE user SET username = "admin", pass = crypto::scrypt::generate("admin"), admin = true;
+CREATE user:admin SET username = "admin", pass = crypto::scrypt::generate("admin"), admin = true;
+CREATE user:test SET username = "test", pass = crypto::scrypt::generate("test");
+CREATE user:three SET username = "three", pass = crypto::scrypt::generate("three"), admin = false;
 
 DEFINE SCOPE global
   -- the JWT session will be valid for 1 day
