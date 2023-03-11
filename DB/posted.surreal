@@ -1,0 +1,9 @@
+DEFINE TABLE posted SCHEMAFULL
+  PERMISSIONS
+    FOR create, select FULL,
+    FOR update, delete NONE;
+DEFINE FIELD in ON posted TYPE record(user);
+DEFINE FIELD out ON posted TYPE record(post);
+DEFINE INDEX relate_idx ON posted COLUMNS out UNIQUE;
+
+RELATE user:admin->posted->post:first;

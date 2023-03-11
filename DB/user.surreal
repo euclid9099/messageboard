@@ -1,26 +1,28 @@
 DEFINE TABLE user SCHEMAFULL
   PERMISSIONS
     FOR select FULL, 
-    FOR update WHERE id = $auth.id, 
+    FOR update WHERE $auth.admin OR id = $auth.id, 
     FOR create NONE,
     FOR delete WHERE $auth.admin OR id = $auth.id;
 --- define FIELD's
 DEFINE FIELD pass ON user TYPE string
+  VALUE crypto::argon2::generate($value)
+  ASSERT $value != NONE
   PERMISSIONS
     FOR update WHERE id = $auth.id,
-    FOR select, create, delete NONE;
-DEFINE FIELD following ON user TYPE array;
-DEFINE FIELD following.* ON user TYPE record(user);
+    FOR select NONE;
 DEFINE FIELD admin ON user TYPE bool
   PERMISSIONS
-    FOR select FULL,
-    FOR create, update, delete WHERE $auth.admin = true;
-DEFINE FIELD username ON user TYPE string;
+    FOR update WHERE $auth.admin = true;
+DEFINE FIELD username ON user TYPE string
+  ASSERT $value != NONE
+  PERMISSIONS
+    FOR update WHERE id = $auth.id;
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
 
-CREATE user:admin SET username = "admin", pass = crypto::scrypt::generate("admin"), admin = true;
-CREATE user:test SET username = "test", pass = crypto::scrypt::generate("test");
-CREATE user:three SET username = "three", pass = crypto::scrypt::generate("three"), admin = false;
+CREATE user:admin SET username = "admin", pass = "admin", admin = true;
+CREATE user:test SET username = "test", pass = "test";
+CREATE user:three SET username = "three", pass = "three", admin = false;
 
 DEFINE SCOPE global
   -- the JWT session will be valid for 1 day
@@ -29,10 +31,10 @@ DEFINE SCOPE global
   -- It is designed to create or add a new record to the database.
   -- If set, it needs to return a record or a record id
   -- The variables can be passed in to the signin method
-  SIGNUP ( CREATE user SET username = $username, pass = crypto::scrypt::generate($pass), admin = false )
+  SIGNUP ( CREATE user SET username = $username, pass = $pass, admin = false )
   -- The optional SIGNIN clause will be run when calling the signin method for this scope
   -- It is designed to check if a record exists in the database.
   -- If set, it needs to return a record or a record id
   -- The variables can be passed in to the signin method
-  SIGNIN ( SELECT * FROM user WHERE username = $username AND crypto::scrypt::compare(pass, $pass) )
+  SIGNIN ( SELECT * FROM user WHERE username = $username AND crypto::argon2::compare(pass, $pass) )
   -- this optional clause will be run when calling the signup method for this scope

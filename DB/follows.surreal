@@ -1,0 +1,12 @@
+DEFINE TABLE follows SCHEMAFULL
+  PERMISSIONS
+    FOR create WHERE $auth,
+    FOR select FULL,
+    FOR update NONE,
+    FOR delete WHERE $auth;
+DEFINE FIELD in ON follows TYPE record(user);
+DEFINE FIELD out ON follows TYPE record(user);
+DEFINE FIELD timestamp ON follows TYPE datetime VALUE time::now();
+DEFINE INDEX relate_idx ON follows COLUMNS in, out UNIQUE;
+
+RELATE user:admin->follows->user:test;
