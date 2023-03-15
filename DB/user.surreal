@@ -1,3 +1,6 @@
+-- import on running database (with user 'root' and password 'root') with
+-- surreal import --conn http://localhost:8000 --user root --pass root --ns global --db global .\user.surreal
+
 DEFINE TABLE user SCHEMAFULL
   PERMISSIONS
     FOR select FULL, 
@@ -19,10 +22,6 @@ DEFINE FIELD username ON user TYPE string
   PERMISSIONS
     FOR update WHERE id = $auth.id;
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
-
-CREATE user:admin SET username = "admin", pass = "admin", admin = true;
-CREATE user:test SET username = "test", pass = "test";
-CREATE user:three SET username = "three", pass = "three", admin = false;
 
 DEFINE SCOPE global
   -- the JWT session will be valid for 1 day

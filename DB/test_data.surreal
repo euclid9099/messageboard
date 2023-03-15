@@ -1,3 +1,6 @@
+-- import on running database (with user 'root' and password 'root') with
+-- surreal import --conn http://localhost:8000 --user root --pass root --ns global --db global .\test_data.surreal
+
 CREATE user:admin SET username = "admin", pass = "admin", admin = true;
 CREATE user:test SET username = "test", pass = "test";
 CREATE user:three SET username = "three", pass = "three", admin = false;
