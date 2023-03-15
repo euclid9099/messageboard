@@ -1,7 +1,7 @@
 import Surreal from "https://deno.land/x/surrealdb@v0.2.0/mod.ts";
 import { Request, Response } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 
-import { decode_jwt, responseSkeleton } from '../helper.ts';
+import { db_url, decode_jwt, responseSkeleton } from '../helper.ts';
 
 const createPost = async ({ request, response }: { request: Request, response: Response }) => {
     await responseSkeleton(response, async () => {
@@ -10,34 +10,48 @@ const createPost = async ({ request, response }: { request: Request, response: R
             throw new Error("post message must be specified");
         }
 
-        const jwt = request.headers.get("X-Token");
-        if (jwt) {
-            await Surreal.Instance.authenticate(jwt);
+        const db = new Surreal(`${db_url}/rpc`, request.headers.get("X-Token"));
+        await db.use("global", "global");
+
+        if (request.url.searchParams.has("parent") && !(await Surreal.Instance.query("SELECT * FROM $post", {post: request.url.searchParams.get("parent")}))[0].result[0]) {
+            throw new Error("specified parent post doesn't exist");
         }
 
-        const response = await Surreal.Instance.query(`CREATE post SET message = \"${body.message}\"`);
-        const post: null|{id: string|null} = response[0].result[0];
-        if (post && post.id && jwt) {
-            const author_id = decode_jwt(jwt).payload.ID;
-            if (author_id) {
-                await Surreal.Instance.query(`RELATE ${author_id}->posted->${post.id}`);
-            }
+        const result = await db.query("CREATE post SET message = $message", {
+            message: body.message
+        });
+        if (request.url.searchParams.has("parent") && result[0].status === "OK") {
+            await db.query("RELATE ($parent)->response->($new)", {
+                parent: request.url.searchParams.get("parent"),
+                new: result[0].result[0].id
+            })
         }
-        await Surreal.Instance.invalidate();
 
-        return response;
+        db.close();
+
+        return result;
     });
 }
 
-const getPosts = async ({ response }: { response: Response }) => {
+const getPosts = async ({ request, response }: { request: Request; response: Response }) => {
     await responseSkeleton(response, async () => {
-        return await Surreal.Instance.query("SELECT *, <-posted<-user.id AS author FROM post");
+        if (request.url.searchParams.has("parent")) {
+            return await Surreal.Instance.query("SELECT * FROM post WHERE $parent INSIDE <-response<-post AND time > $after ORDER BY time LIMIT 25", {
+                parent: request.url.searchParams.get("parent"),
+                after: request.url.searchParams.get("after") ?? "0"
+            });
+        }
+        return await Surreal.Instance.query("SELECT * FROM post WHERE count(<-response<-post) = 0 AND time > $after ORDER BY time LIMIT 25", {
+            after: request.url.searchParams.get("after") ?? "0"
+        });
     });
 }
 
-const getPost = async ({ params, response }: { params: {id: string}; response: Response }) => {
+const getPost = async ({ params, response }: { params: {id: string}; request: Request; response: Response }) => {
     await responseSkeleton(response, async () => {
-        return await Surreal.Instance.query(`SELECT * FROM post WHERE id = ${params.id}`);
+        return await Surreal.Instance.query("SELECT *, count(<-likes<-user.id) AS likes, count(<-dislikes<-user.id) AS dislikes, ->response->post AS responses FROM post WHERE id = $id", {
+            id: params.id
+        });
     });
 }
 
@@ -54,15 +68,17 @@ const editPost = async ({ params, request, response }: { params: {id: string}; r
         }
         
         const json = decode_jwt(jwt);
-        const post: {id: string, author_id: string} = (await Surreal.Instance.query(`SELECT id, author_id FROM ${params.id}`))[0].result[0];
+        const post: {id: string, author: string} = (await Surreal.Instance.query("SELECT id, author FROM $id", {
+            id: params.id
+        }))[0].result[0];
 
-        if (json.payload.ID != post.author_id) {
+        if (json.payload.ID != post.author) {
             throw new Error("unable to edit post not made by you");
         }
 
-        await Surreal.Instance.authenticate(jwt);
-        const result = await Surreal.Instance.change(post.id, {message: body.message, edited: true});
-        await Surreal.Instance.invalidate();
+        const db = new Surreal(`${db_url}/rpc`, jwt);
+        const result = await db.change(post.id, {message: body.message});
+        db.close();
 
         return result;
     });
@@ -76,115 +92,66 @@ const deletePost = async ({ params, request, response }: { params: {id: string};
         }
         
         const json = decode_jwt(jwt);
-        const post = (await Surreal.Instance.query(`SELECT id, author_id FROM ${params.id}`))[0].result[0];
+        const post = (await Surreal.Instance.query("SELECT id, author FROM $id", {
+            id: params.id
+        }))[0].result[0];
         if (!post) {
             throw new Error("post doesn't exist");
         }
 
-        const account = (await Surreal.Instance.query(`SELECT admin FROM ${json.payload.ID}`))[0].result[0];
+        const account = (await Surreal.Instance.query("SELECT admin FROM $id", {
+            id: json.payload.ID
+        }))[0].result[0];
         
         if (!account.admin && (!post.author_id || json.payload.ID != post.author_id)) {
             throw new Error("unable to delete post not made by you");
         }
 
-        await Surreal.Instance.authenticate(jwt);
-        const result = await Surreal.Instance.delete(post.id);
-        await Surreal.Instance.invalidate();
+        const db = new Surreal(`${db_url}/rpc`, jwt);
+        const result = await db.delete(post.id);
+        db.close();
+
+        return result;
+    });
+}
+
+const relateOnTable = async ({ params, request, response, table }: { params: {id: string }; request: Request; response: Response; table: "likes"|"dislikes" }) => {
+    await responseSkeleton(response, async () => {
+        const jwt = request.headers.get("X-Token");
+        if (!jwt) {
+            throw new Error("cannot like post without authentication");
+        }
+        
+        const post = (await Surreal.Instance.query(`SELECT id, author_id FROM ${params.id}`))[0].result[0];
+        if (!post) {
+            throw new Error("post doesn't exist");
+        }
+
+        const json = decode_jwt(jwt);
+        const account: {id: string} = (await Surreal.Instance.query(`SELECT id FROM ${json.payload.ID}`))[0].result[0];
+        if (!account) {
+            throw new Error("unable to like post with invalid user id");
+        }
+
+        const db = new Surreal(`${db_url}/rpc`, jwt);
+        if (!request.url.searchParams.has("reset")) {
+            await db.query(`DELETE ${table == "likes" ? "dislikes" : "likes"} WHERE in = ($auth.id) AND out = $post`, {post: post.id});
+        }
+        const result = await db.query(request.url.searchParams.has("reset") ? `DELETE ${table} WHERE in = ($auth.id) AND out = $post` : `RELATE ($auth.id)->${table}->($post)`, {
+            post: post.id
+        });
+        db.close();
 
         return result;
     });
 }
 
 const likePost = async ({ params, request, response }: { params: {id: string }; request: Request; response: Response }) => {
-    await responseSkeleton(response, async () => {
-        const jwt = request.headers.get("X-Token");
-        if (!jwt) {
-            throw new Error("cannot like post without authentication");
-        }
-        
-        const json = decode_jwt(jwt);
-        const post = (await Surreal.Instance.query(`SELECT id, author_id FROM ${params.id}`))[0].result[0];
-        if (!post) {
-            throw new Error("post doesn't exist");
-        }
-
-        const account: {id: string} = (await Surreal.Instance.query(`SELECT id FROM ${json.payload.ID}`))[0].result[0];
-        if (!account) {
-            throw new Error("unable to like post with invalid user id");
-        }
-
-        await Surreal.Instance.authenticate(jwt);
-        let result;
-        if (request.url.searchParams.has("reset")) {
-            result = await Surreal.Instance.query(`UPDATE ${params.id} SET likes -= ${account.id}`);
-        } else {
-            result = await Surreal.Instance.query(`UPDATE ${params.id} SET likes += ${account.id}, dislikes -= ${account.id}`);
-        }
-        await Surreal.Instance.invalidate();
-
-        return result;
-    });
+    await relateOnTable({params, request, response, table: "likes"});
 }
 
 const dislikePost = async ({ params, request, response }: { params: {id: string }; request: Request; response: Response }) => {
-    await responseSkeleton(response, async () => {
-        const jwt = request.headers.get("X-Token");
-        if (!jwt) {
-            throw new Error("cannot like post without authentication");
-        }
-        
-        const json = decode_jwt(jwt);
-        const post = (await Surreal.Instance.query(`SELECT id, author_id FROM ${params.id}`))[0].result[0];
-        if (!post) {
-            throw new Error("post doesn't exist");
-        }
-
-        const account: {id: string} = (await Surreal.Instance.query(`SELECT id FROM ${json.payload.ID}`))[0].result[0];
-        if (!account) {
-            throw new Error("unable to like post with invalid user id");
-        }
-
-        await Surreal.Instance.authenticate(jwt);
-        let result;
-        if (request.url.searchParams.has("reset")) {
-            result = await Surreal.Instance.query(`UPDATE ${params.id} SET dislikes -= ${account.id}`);
-        } else {
-            result = await Surreal.Instance.query(`UPDATE ${params.id} SET dislikes += ${account.id}, likes -= ${account.id}`);
-        }
-        await Surreal.Instance.invalidate();
-
-        return result;
-    });
+    await relateOnTable({params, request, response, table: "dislikes"});
 }
 
-const createResponse = async ({ params, request, response }: { params: {id: string}; request: Request, response: Response }) => {
-    await responseSkeleton(response, async () => {
-        const post: {message: string|null} = await request.body().value;
-        if (!post.message) {
-            throw new Error("post message must be specified");
-        }
-
-        const jwt = request.headers.get("X-Token");
-        if (jwt) {
-            await Surreal.Instance.authenticate(jwt);
-        }
-
-        const parent = (await Surreal.Instance.query(`SELECT id FROM ${params.id}`))[0].result[0];
-        if (!parent) {
-            throw new Error("post doesn't exist");
-        }
-
-        const result = await Surreal.Instance.query(`CREATE post SET message = \"${post.message}\", parent = ${parent.id}`);
-        await Surreal.Instance.invalidate();
-
-        return result;
-    });
-}
-
-const getResponses = async ({ params, response }: { params: {id: string}; response: Response }) => {
-    await responseSkeleton(response, async () => {
-        return await Surreal.Instance.query(`SELECT id, author_id, message, parent, original_parent, edited, count(likes) AS amount_likes, count(dislikes) AS amount_dislikes FROM post WHERE parent = ${params.id}`);
-    });
-}
-
-export {createPost, getPosts, getPost, editPost, deletePost, likePost, dislikePost, createResponse, getResponses}
+export {createPost, getPosts, getPost, editPost, deletePost, likePost, dislikePost}

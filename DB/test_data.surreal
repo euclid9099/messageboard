@@ -1,0 +1,15 @@
+CREATE user:admin SET username = "admin", pass = "admin", admin = true;
+CREATE user:test SET username = "test", pass = "test";
+CREATE user:three SET username = "three", pass = "three", admin = false;
+
+RELATE user:admin->follows->user:test;
+
+CREATE post:first SET message = "Hello World!";
+CREATE post:second SET message = "this will be deleted";
+CREATE post:third SET message = "Test #3";
+
+RELATE post:first->response->post:second;
+RELATE post:second->response->post:third;
+
+RELATE user:admin->likes->post:first;
+RELATE user:test->dislikes->post:first;

@@ -1,28 +1,13 @@
 DEFINE TABLE post SCHEMAFULL
   PERMISSIONS
     FOR create, select FULL,
-    FOR update WHERE author_id = $auth.id,
-    FOR delete WHERE $auth.admin OR author_id = $auth.id;
+    FOR update WHERE author = $auth.id,
+    FOR delete WHERE $auth.admin OR author = $auth.id;
 --- define FIELD's
-DEFINE FIELD author_id ON TABLE post TYPE record(user)
-  VALUE $auth.id;
+DEFINE FIELD author ON TABLE post TYPE record(user) VALUE $auth;
 DEFINE FIELD message ON TABLE post TYPE string;
-DEFINE FIELD parent ON TABLE post TYPE record(post);
-DEFINE FIELD original_parent ON TABLE post TYPE bool
-  VALUE $value OR true;
+DEFINE FIELD time ON TABLE post TYPE datetime VALUE time::now()
+  PERMISSIONS
+    FOR update NONE;
 DEFINE FIELD edited ON TABLE post TYPE bool
-  VALUE $value OR false;
-DEFINE FIELD likes ON TABLE post TYPE array
-  VALUE $value OR []
-  PERMISSIONS
-    FOR create, select, update FULL
-    FOR delete NONE;
-DEFINE FIELD likes.* ON TABLE post TYPE record(user);
-DEFINE FIELD dislikes ON TABLE post TYPE array
-  VALUE $value OR []
-  PERMISSIONS
-    FOR create, select, update FULL
-    FOR delete NONE;
-DEFINE FIELD dislikes.* ON TABLE post TYPE record(user);
-
-CREATE post:first SET message = "Hello World!";
+  VALUE (IF $value IS null THEN false ELSE true END);

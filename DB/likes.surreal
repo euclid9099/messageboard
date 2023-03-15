@@ -1,0 +1,19 @@
+DEFINE TABLE likes SCHEMAFULL
+  PERMISSIONS
+    FOR create WHERE $auth,
+    FOR select FULL,
+    FOR update NONE,
+    FOR delete WHERE $auth; --should be auth.id = in but that doesn't work for some reason
+DEFINE FIELD in ON likes TYPE record(user);
+DEFINE FIELD out ON likes TYPE record(post);
+DEFINE INDEX relate_idx ON likes COLUMNS in, out UNIQUE;
+
+DEFINE TABLE dislikes SCHEMAFULL
+  PERMISSIONS
+    FOR create WHERE $auth,
+    FOR select FULL,
+    FOR update NONE,
+    FOR delete WHERE $auth; --should be auth.id = in but that doesn't work for some reason
+DEFINE FIELD in ON dislikes TYPE record(user);
+DEFINE FIELD out ON dislikes TYPE record(post);
+DEFINE INDEX relate_idx ON dislikes COLUMNS in, out UNIQUE;

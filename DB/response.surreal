@@ -1,0 +1,10 @@
+DEFINE TABLE response SCHEMAFULL
+  PERMISSIONS
+    FOR create, select, update, delete FULL;
+DEFINE FIELD in ON response TYPE record(post);
+DEFINE FIELD out ON response TYPE record(post);
+DEFINE INDEX response_idx ON response COLUMNS out UNIQUE;
+
+DEFINE EVENT link_deleted ON TABLE response WHEN $event = "DELETE" THEN (
+	DELETE post WHERE id = $before.out
+);

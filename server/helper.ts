@@ -1,5 +1,7 @@
 import { Response } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 
+const db_url = "http://127.0.0.1:8000";
+
 const decode_jwt = (jwt: string) => {
     const [header, payload] = jwt.split(".").slice(0,2).map((val: string) => {
         const json: string = atob(val);
@@ -35,4 +37,4 @@ const responseSkeleton = async (response: Response, callBack: () => unknown) => 
     }
 }
 
-export {decode_jwt, responseSkeleton}
+export {db_url, decode_jwt, responseSkeleton}
