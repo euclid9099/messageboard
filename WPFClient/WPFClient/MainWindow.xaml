@@ -1,0 +1,74 @@
+﻿<Window x:Class="WPFClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WPFClient"
+        mc:Ignorable="d"
+        Title="Irmgarde" Height="600" Width="800">
+    <Grid>
+        <TabControl>
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="accountDisplay" Width="10" Height="10" Fill="Gray"/>
+                        <TextBlock Margin="5,0" x:Name="accountTab">Account (anonymus)</TextBlock>
+                    </StackPanel>
+                </TabItem.Header>
+                <Grid VerticalAlignment="Center">
+                    <StackPanel x:Name="loginView" Visibility="Visible" HorizontalAlignment="Center">
+                        <TextBlock Margin="0,15,0,5" FontSize="25" TextAlignment="Center">Username</TextBlock>
+                        <TextBox FontSize="25" x:Name="usernameTextbox" Width="250"/>
+                        <TextBlock Margin="0,15,0,5" FontSize="25" TextAlignment="Center">Password</TextBlock>
+                        <PasswordBox FontSize="25" x:Name="passwordTextbox" Width="250"/>
+                        <Button Click="Login" Margin="0,15,0,0" FontSize="25" Width="100">Login</Button>
+                        <TextBlock>(you can also remain anonymous - most functions will still work)</TextBlock>
+                    </StackPanel>
+                    <StackPanel x:Name="accountView" HorizontalAlignment="Center" Visibility="Hidden">
+                        <TextBlock Margin="0,15,0,5" FontSize="20" TextAlignment="Center">Post as </TextBlock>
+                        <CheckBox x:Name="useAccountCheckbox" Checked="ActivateAccount" Unchecked="DeactivateAccount" IsChecked="False" HorizontalAlignment="Center"></CheckBox>
+                        <TextBlock>Toggle off to post anonymously, without logging out</TextBlock>
+                        <Button Click="Logout" Margin="0,20,0,0" FontSize="25" Width="100">Logout</Button>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Messages">
+                <Grid Margin="15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="300" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="50" />
+                    </Grid.RowDefinitions>
+
+
+                    <ListBox HorizontalContentAlignment="Stretch" Grid.Row="0" x:Name="postsListbox">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="Black" BorderThickness="1">
+                                    <StackPanel Margin="10">
+                                        <Canvas>
+                                            <TextBlock Text="{Binding Author}" />
+                                            <TextBlock Canvas.Right="0" Text="{Binding DisplayDate}" />
+                                        </Canvas>
+                                        <TextBlock Margin="10,30,10,0" Text="{Binding Message}" />
+                                        <TextBlock FontSize="10" Margin="10,0,10,30" Text="{Binding DisplayEdited}" />
+                                        <Canvas>
+                                            <Button Canvas.Bottom="0" Content="{Binding DisplayLikes}" />
+                                            <Button Canvas.Bottom="0" Content="{Binding DisplayDislikes}" Canvas.Right="0" />
+                                        </Canvas>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Button Grid.Row="1" Click="LoadMorePostsButton">load (further)</Button>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+    </Grid>
+</Window>

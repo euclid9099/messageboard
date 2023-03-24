@@ -54,21 +54,26 @@ const getPosts = async ({
   response: Response;
 }) => {
   await responseSkeleton(response, async () => {
+    console.log(request.url.toString());
     if (request.url.searchParams.has("parent")) {
-      return await Surreal.Instance.query(
-        "SELECT * FROM post WHERE $parent INSIDE <-response<-post AND time > $after ORDER BY time LIMIT 25",
+      return (
+        await Surreal.Instance.query(
+          "SELECT *, count(<-likes<-user.id) AS likes, count(<-dislikes<-user.id) AS dislikes, count(->response->post) AS responses FROM post WHERE $parent INSIDE <-response<-post AND time > $after ORDER BY time LIMIT 25",
+          {
+            parent: request.url.searchParams.get("parent"),
+            after: request.url.searchParams.get("after") ?? "0",
+          }
+        )
+      )[0];
+    }
+    return (
+      await Surreal.Instance.query(
+        "SELECT *, count(<-likes<-user.id) AS likes, count(<-dislikes<-user.id) AS dislikes, count(->response->post) AS responses FROM post WHERE count(<-response<-post) = 0 AND time > $after ORDER BY time LIMIT 25",
         {
-          parent: request.url.searchParams.get("parent"),
           after: request.url.searchParams.get("after") ?? "0",
         }
-      );
-    }
-    return await Surreal.Instance.query(
-      "SELECT * FROM post WHERE count(<-response<-post) = 0 AND time > $after ORDER BY time LIMIT 25",
-      {
-        after: request.url.searchParams.get("after") ?? "0",
-      }
-    );
+      )
+    )[0];
   });
 };
 
@@ -81,12 +86,14 @@ const getPost = async ({
   response: Response;
 }) => {
   await responseSkeleton(response, async () => {
-    return await Surreal.Instance.query(
-      "SELECT *, count(<-likes<-user.id) AS likes, count(<-dislikes<-user.id) AS dislikes, ->response->post AS responses FROM post WHERE id = $id",
-      {
-        id: params.id,
-      }
-    );
+    return (
+      await Surreal.Instance.query(
+        "SELECT *, count(<-likes<-user.id) AS likes, count(<-dislikes<-user.id) AS dislikes, count(->response->post) AS responses FROM post WHERE id = $id",
+        {
+          id: params.id,
+        }
+      )
+    )[0];
   });
 };
 
