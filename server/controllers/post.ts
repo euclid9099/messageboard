@@ -176,7 +176,6 @@ const relateOnTable = async ({
 	response: Response;
 	table: "likes" | "dislikes";
 }) => {
-	console.log(request.headers);
 	await responseSkeleton(response, async () => {
 		const jwt = request.headers.get("X-Token");
 		if (!jwt) {
