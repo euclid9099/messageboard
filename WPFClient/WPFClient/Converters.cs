@@ -45,7 +45,7 @@ namespace WPFClient
         {
             if (value is double width)
             {
-                return width - 50;
+                return width - 60;
             }
             return value;
         }

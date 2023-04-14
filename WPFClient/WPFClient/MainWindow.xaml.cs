@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -140,6 +141,14 @@ namespace WPFClient
         private void DislikePost(object sender, RoutedEventArgs e)
         {
             ChangeImpressionOnPost(sender, e, false);
+        }
+
+        private void CreateNewPost(object sender, RoutedEventArgs e)
+        {
+            if (newPostContent.Text.IsNullOrEmpty()) return;
+            _ = httpClient.PostAsync($"{api}/posts", new StringContent($"{{\"message\":\"{newPostContent.Text}\"}}", Encoding.UTF8, "application/json")).Result;
+            LoadMorePostsButton(sender, e);
+            newPostContent.Text = "";
         }
     }
 }

@@ -31,7 +31,7 @@
                         <TextBlock>(you can also remain anonymous - most functions will still work)</TextBlock>
                     </StackPanel>
                     <StackPanel x:Name="accountView" HorizontalAlignment="Center" Visibility="Hidden">
-                        <TextBlock Margin="0,15,0,5" FontSize="20" TextAlignment="Center">Post as </TextBlock>
+                        <TextBlock Margin="0,15,0,5" FontSize="20" TextAlignment="Center">Use account</TextBlock>
                         <CheckBox x:Name="useAccountCheckbox" Checked="ActivateAccount" Unchecked="DeactivateAccount" IsChecked="False" HorizontalAlignment="Center"></CheckBox>
                         <TextBlock>Toggle off to post anonymously, without logging out</TextBlock>
                         <Button Click="Logout" Margin="0,20,0,0" FontSize="25" Width="100">Logout</Button>
@@ -50,15 +50,14 @@
                     </Grid.RowDefinitions>
 
 
-                    <ListBox HorizontalContentAlignment="Stretch" Grid.Row="0" x:Name="postsListbox">
+                    <ListBox HorizontalContentAlignment="Stretch" Grid.Row="0" x:Name="postsListbox" ScrollViewer.CanContentScroll="False">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border BorderBrush="Black" BorderThickness="1">
                                     <StackPanel Margin="10" Width="{Binding ElementName=postsListbox, Path=ActualWidth, Converter={StaticResource WidthReducer}}">
                                         <Canvas>
                                             <TextBlock Text="{Binding AuthorName}" />
-                                            <TextBlock x:Name="PostIdText" Text="{Binding Id}" Visibility="Hidden"/>
-                                            <TextBlock Canvas.Right="0" Text="{Binding DisplayDate}" />
+                                            <TextBlock FontStyle="Italic" Canvas.Right="0" Text="{Binding DisplayDate}" />
                                         </Canvas>
                                         <TextBlock TextWrapping="Wrap" Margin="10,30,10,0" Text="{Binding Message}" />
                                         <TextBlock FontSize="10" Margin="10,0,10,30" Text="{Binding DisplayEdited}" />
@@ -71,8 +70,43 @@
                                 </Border>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                            <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="true">
+                                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
+                                                </Trigger>
+                                                <MultiTrigger>
+                                                    <MultiTrigger.Conditions>
+                                                        <Condition Property="IsSelected" Value="true"/>
+                                                        <Condition Property="Selector.IsSelectionActive" Value="false"/>
+                                                    </MultiTrigger.Conditions>
+                                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}}"/>
+                                                </MultiTrigger>
+                                                <Trigger Property="IsEnabled" Value="false">
+                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
                     </ListBox>
 
+                    <StackPanel Margin="10" Grid.Row="0" Grid.Column="1">
+                        <TextBlock FontSize="20" HorizontalAlignment="Center">Share your thoughts</TextBlock>
+                        <TextBox Height="150" Margin="10" TextWrapping="Wrap" x:Name="newPostContent"></TextBox>
+                        <Button Width="70" Click="CreateNewPost" Content="Send" />
+                    </StackPanel>
                     <Button Grid.Row="1" Click="LoadMorePostsButton">load (further)</Button>
                 </Grid>
             </TabItem>
