@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 
 namespace WPFClient
 {
@@ -61,21 +63,35 @@ namespace WPFClient
         }
     }
 
-    internal class PostResponse
+    internal class User
     {
-        string? author;
+        public User() { }
+        public string Username { get; set; }
+        public string Id { get; set; }
+        public bool Admin { get; set; }
+    }
+
+    class PostResponse
+    {
+        User? author;
         bool? edited;
         string? id;
         string? message;
         DateTime time;
         int likes;
+        bool? liked;
         int dislikes;
+        bool? disliked;
 
         public PostResponse() { }
 
-        public string Author
+        public string AuthorName
         {
-            get { return author ?? "(unknown)"; }
+            get { return author?.Username ?? "(unknown)"; }
+        }
+
+        public User? Author {
+            get { return author; }
             set { author = value; }
         }
 
@@ -115,6 +131,18 @@ namespace WPFClient
             set { dislikes = value; }
         }
 
+        public bool? Liked
+        {
+            get { return liked; }
+            set { liked = value; }
+        }
+
+        public bool? Disliked
+        {
+            get { return disliked; }
+            set { disliked = value; }
+        }
+
         public string DisplayDate
         {
             get { return time.ToString(); }
@@ -127,12 +155,12 @@ namespace WPFClient
 
         public string DisplayLikes
         {
-            get { return $"Like ({likes})"; }
+            get { return $"  Like ({likes})  "; }
         }
 
         public string DisplayDislikes
         {
-            get { return $"Dislike ({dislikes})"; }
+            get { return $"  Dislike ({dislikes})  "; }
         }
     }
 }
