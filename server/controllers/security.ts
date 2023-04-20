@@ -26,7 +26,7 @@ const signup = async ({ request, response }: { request: Request; response: Respo
 			username: body.username,
 		});
 		if (result[0].result.length > 0) {
-			throw new Error(`Username already in use. Try ${request.url.origin}/login`);
+			throw new Error("Username already in use. Try to login");
 		}
 		const db = new Surreal(`${db_url}/rpc`, null);
 		const token: string = await db.signup({
