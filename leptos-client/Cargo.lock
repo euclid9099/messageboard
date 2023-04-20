@@ -185,10 +185,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "client"
+version = "0.0.0"
+dependencies = [
+ "base64 0.21.0",
+ "console_error_panic_hook",
+ "console_log",
+ "gloo-net",
+ "gloo-storage",
+ "leptos",
+ "leptos_router",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "collection_literals"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "186dce98367766de751c42c4f03970fc60fc012296e706ccbb9d5df9b6c1e271"
+
+[[package]]
+name = "common_macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3f6d59c71e7dc3af60f0af9db32364d96a16e9310f3f5db2b55ed642162dd35"
 
 [[package]]
 name = "config"
@@ -207,6 +230,26 @@ dependencies = [
  "serde_json",
  "toml",
  "yaml-rust",
+]
+
+[[package]]
+name = "console_error_panic_hook"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a06aeb73f470f66dcdbf7223caeebb85984942f22f1adb2a088cf9668146bbbc"
+dependencies = [
+ "cfg-if",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "console_log"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be8aed40e4edbf4d3b4431ab260b63fdc40f5780a4766824329ea0f1eefe3c0f"
+dependencies = [
+ "log",
+ "web-sys",
 ]
 
 [[package]]
@@ -565,6 +608,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "gloo-storage"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d6ab60bf5dbfd6f0ed1f7843da31b41010515c745735c970e821945ca91e480"
+dependencies = [
+ "gloo-utils",
+ "js-sys",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "gloo-utils"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -579,9 +637,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.17"
+version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66b91535aa35fea1523ad1b86cb6b53c28e0ae566ba4a460f4457e936cad7c6f"
+checksum = "17f8a914c2987b688368b5138aa05321db91f4090cf26118185672ad588bce21"
 dependencies = [
  "bytes 1.4.0",
  "fnv",
@@ -826,13 +884,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "leptos-client"
-version = "0.1.0"
-dependencies = [
- "leptos",
-]
-
-[[package]]
 name = "leptos_config"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -938,6 +989,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "leptos_router"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "214fca795824160eac59a0168607f3ff14ab09390a62938ee26e7ef077f27536"
+dependencies = [
+ "cfg-if",
+ "common_macros",
+ "gloo-net",
+ "js-sys",
+ "lazy_static",
+ "leptos",
+ "linear-map",
+ "log",
+ "percent-encoding",
+ "serde",
+ "serde_urlencoded",
+ "thiserror",
+ "tracing",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "leptos_server"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -957,6 +1032,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3304a64d199bb964be99741b7a14d26972741915b3649639149b2479bb46f4b5"
 
 [[package]]
+name = "linear-map"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfae20f6b19ad527b550c223fddc3077a547fc70cda94b9b566575423fd303ee"
+
+[[package]]
 name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -964,9 +1045,9 @@ checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
+checksum = "3f508063cc7bb32987c71511216bd5a32be15bccb6a80b52df8b9d7f01fc3aa2"
 
 [[package]]
 name = "lock_api"
@@ -1459,9 +1540,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.37.11"
+version = "0.37.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85597d61f83914ddeba6a47b3b8ffe7365107221c2e557ed94426489fefb5f77"
+checksum = "722529a737f5a942fdbac3a46cee213053196737c5eaa3386d52e85b786f2659"
 dependencies = [
  "bitflags",
  "errno",
