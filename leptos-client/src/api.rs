@@ -54,17 +54,11 @@ impl AuthorizedApi {
     pub const fn new(url: &'static str, token: ApiToken) -> Self {
         Self { url, token }
     }
-    fn auth_header_value(&self) -> String {
-        self.token.token.clone()
-    }
     async fn send<T>(&self, req: Request) -> Result<T>
     where
         T: DeserializeOwned,
     {
-        let response = req
-            .header("x-token", &self.auth_header_value())
-            .send()
-            .await?;
+        let response = req.header("x-token", &self.token.token).send().await?;
         into_json(response).await
     }
     pub async fn logout(&self) -> Result<()> {

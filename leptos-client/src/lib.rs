@@ -1,14 +1,13 @@
 use gloo_storage::{LocalStorage, Storage};
 use leptos::*;
 use leptos_router::*;
-use types::ApiToken;
 
 mod api;
 mod components;
 mod pages;
 mod types;
 
-use self::{components::*, pages::*, types::UserInfo};
+use self::{components::*, pages::*};
 
 const DEFAULT_API_URL: &str = "http://127.0.0.1:7700";
 const API_TOKEN_STORAGE_KEY: &str = "api-token";
@@ -66,7 +65,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     let unauthorized_api = api::UnauthorizedApi::new(DEFAULT_API_URL);
     if let Ok(token) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
-        let mut api = api::AuthorizedApi::new(DEFAULT_API_URL, token);
+        let api = api::AuthorizedApi::new(DEFAULT_API_URL, token);
 
         authorized_api.update(|a| *a = Some(api));
         fetch_user_info.dispatch(());
@@ -128,6 +127,12 @@ pub fn App(cx: Scope) -> impl IntoView {
                         fetch_user_info.dispatch(());
                 } />
               }
+            />
+            <Route
+            path=Page::NotFound.path()
+            view=move |cx| view! { cx,
+                <h2>"404 - Page not found"</h2>
+                }
             />
           </Routes>
         </main>

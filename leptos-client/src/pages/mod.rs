@@ -10,6 +10,7 @@ pub enum Page {
     Home,
     Login,
     Register,
+    NotFound,
 }
 
 impl Page {
@@ -18,6 +19,7 @@ impl Page {
             Self::Home => "/",
             Self::Login => "/login",
             Self::Register => "/register",
+            Self::NotFound => "*",
         }
     }
 }
