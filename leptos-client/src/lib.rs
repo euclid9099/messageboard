@@ -8,7 +8,6 @@ mod pages;
 mod types;
 
 use self::{components::*, pages::*};
-
 const DEFAULT_API_URL: &str = "http://127.0.0.1:7700";
 const API_TOKEN_STORAGE_KEY: &str = "api-token";
 
@@ -128,6 +127,11 @@ pub fn App(cx: Scope) -> impl IntoView {
                 } />
               }
             />
+            <Route
+              path=Page::Posts.path()
+              view=move |cx| view! { cx,
+                <Posts api=(if authorized_api.get().is_some() {api::ApiTypes::Authorized(authorized_api.get().unwrap())} else {api::ApiTypes::Unauthorized(unauthorized_api)})/>
+            }/>
             <Route
             path=Page::NotFound.path()
             view=move |cx| view! { cx,

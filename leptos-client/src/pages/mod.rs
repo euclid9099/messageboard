@@ -1,8 +1,9 @@
 pub mod home;
 pub mod login;
+pub mod posts;
 pub mod register;
 
-pub use self::{home::*, login::*, register::*};
+pub use self::{home::*, login::*, posts::*, register::*};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub enum Page {
@@ -10,6 +11,7 @@ pub enum Page {
     Home,
     Login,
     Register,
+    Posts,
     NotFound,
 }
 
@@ -19,6 +21,7 @@ impl Page {
             Self::Home => "/",
             Self::Login => "/login",
             Self::Register => "/register",
+            Self::Posts => "/posts",
             Self::NotFound => "*",
         }
     }

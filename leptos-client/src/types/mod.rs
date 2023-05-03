@@ -1,4 +1,5 @@
 use base64::{engine::general_purpose, Engine};
+use chrono::{DateTime, Utc};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +13,15 @@ pub struct Credentials {
 pub struct UserInfo {
     pub id: String,
     pub username: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Post {
+    pub author: Option<UserInfo>,
+    pub edited: bool,
+    pub id: String,
+    pub message: String,
+    pub time: DateTime<Utc>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]

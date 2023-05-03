@@ -5,14 +5,20 @@ use thiserror::Error;
 
 use crate::types::{self, *};
 
+#[derive(Clone)]
+pub enum ApiTypes {
+    Unauthorized(UnauthorizedApi),
+    Authorized(AuthorizedApi),
+}
+
 #[derive(Clone, Copy)]
 pub struct UnauthorizedApi {
-    url: &'static str,
+    pub url: &'static str,
 }
 
 #[derive(Clone)]
 pub struct AuthorizedApi {
-    url: &'static str,
+    pub url: &'static str,
     token: ApiToken,
 }
 
@@ -48,13 +54,20 @@ impl UnauthorizedApi {
             Err(e) => Err(e),
         }
     }
+    pub async fn send<T>(&self, req: Request) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        let response = req.send().await?;
+        into_json(response).await
+    }
 }
 
 impl AuthorizedApi {
     pub const fn new(url: &'static str, token: ApiToken) -> Self {
         Self { url, token }
     }
-    async fn send<T>(&self, req: Request) -> Result<T>
+    pub async fn send<T>(&self, req: Request) -> Result<T>
     where
         T: DeserializeOwned,
     {
@@ -97,7 +110,7 @@ impl AuthorizedApi {
     }
 }
 
-type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
