@@ -57,6 +57,19 @@ pub fn Posts(cx: Scope, token: ReadSignal<Option<ApiToken>>) -> impl IntoView {
             <p style ="color:red;" >{ err }</p>
           })
         }
-        <button on:click=move|_| load_posts_action.dispatch(()) prop:enabled=move|| false>"Load posts"</button>
+        {move || if wait_for_response.get() {
+            view!{ cx,
+                <div>
+                    <p>"Loading..."</p>
+                </div>
+            }
+        } else {
+            view!{ cx,
+                <div>
+                    <button on:click=move|_| load_posts_action.dispatch(()) enabled=move || wait_for_response.get()>"Load posts"</button>
+                </div>
+            }
+        }
+    }
     }
 }

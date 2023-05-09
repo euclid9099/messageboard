@@ -22,6 +22,11 @@ pub struct Post {
     pub id: String,
     pub message: String,
     pub time: DateTime<Utc>,
+    pub likes: u32,
+    pub liked: Option<bool>,
+    pub dislikes: u32,
+    pub disliked: Option<bool>,
+    pub responses: u16,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -67,8 +72,8 @@ pub struct Reply<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DBReply<T> {
-    pub status: String,
-    pub time: String,
-    pub result: T,
+#[serde(tag = "status")]
+pub enum DBReply<T> {
+    OK { time: String, result: T },
+    ERR { time: String, detail: String },
 }

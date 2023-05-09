@@ -40,15 +40,22 @@ pub async fn load_user(user_id: Option<&str>) -> Result<UserInfo> {
     let user_reply: types::Reply<Vec<DBReply<Vec<UserInfo>>>> =
         into_json(Request::get(&url).send().await?).await?;
     match user_reply.content {
-        Some(user_in_db) => {
-            let user = user_in_db.get(0).unwrap().result.get(0).unwrap().to_owned();
-            log::debug!("User info: {:?}", user);
-            return Ok(user);
-        }
+        Some(user_in_db) => match user_in_db.get(0).unwrap() {
+            DBReply::OK { time, result } => {
+                let user = result.get(0).unwrap().to_owned();
+                log::debug!("User info: {:?}", user);
+                return Ok(user);
+            }
+            DBReply::ERR { time, detail } => {
+                return Err(Error::Api(types::Error {
+                    message: detail.to_owned(),
+                }))
+            }
+        },
         None => {
-            return Err(Error::Api(
-                user_reply.error.expect("An unknown error occured"),
-            ))
+            return Err(Error::Api(user_reply.error.unwrap_or(types::Error {
+                message: "neither token nor response have been set".to_string(),
+            })))
         }
     }
 }
@@ -91,14 +98,61 @@ pub async fn load_post(
 
     let post_reply: types::Reply<DBReply<Vec<Post>>> = into_json(req.send().await?).await?;
     match post_reply.content {
-        Some(user_in_db) => {
-            let posts = user_in_db.result.to_owned();
-            return Ok(posts);
-        }
+        Some(dbreply) => match dbreply {
+            DBReply::OK { time, result } => {
+                return Ok(result);
+            }
+            DBReply::ERR { time, detail } => {
+                return Err(Error::Api(types::Error {
+                    message: detail.to_owned(),
+                }))
+            }
+        },
         None => {
             return Err(Error::Api(
                 post_reply.error.expect("An unknown error occured"),
             ))
+        }
+    }
+}
+
+pub async fn post_impression(
+    post_id: String,
+    usertoken: ApiToken,
+    positive: bool,
+    reset: bool,
+) -> Result<Post> {
+    let mut url = format!(
+        "{}/posts/{}/{}",
+        DEFAULT_API_URL,
+        post_id,
+        if positive { "like" } else { "dislike" }
+    );
+    if reset {
+        url.push_str("?reset");
+    }
+    log::debug!("Like url: {}", url);
+
+    let req = Request::post(&url).header("x-token", &usertoken.token);
+
+    let res = req.send().await.unwrap();
+    let post_reply: types::Reply<DBReply<Vec<Post>>> = into_json(res).await.unwrap();
+    match post_reply.content {
+        Some(dbrepl) => match dbrepl {
+            DBReply::OK { time: _, result } => {
+                return Ok(result.get(0).unwrap().to_owned());
+            }
+            DBReply::ERR { time: _, detail } => {
+                log::debug!("Error: {}", detail);
+                return Err(Error::Api(types::Error {
+                    message: detail.to_owned(),
+                }));
+            }
+        },
+        None => {
+            return Err(Error::Api(post_reply.error.unwrap_or(types::Error {
+                message: "An unknown error occured".to_string(),
+            })))
         }
     }
 }
