@@ -1,0 +1,31 @@
+.tl-post {
+    border-radius: 1rem;
+    padding: 2rem;
+    margin: 1rem;
+
+    &:nth-child(4n) {
+        box-shadow: 0 0 2rem #e5ffe7;
+        background-color: #e5ffe7;
+    }
+
+    &:nth-child(4n + 1) {
+        box-shadow: 0 0 2rem #ffe5e5;
+        background-color: #ffe5e5;
+    }
+
+    &:nth-child(4n + 2) {
+        box-shadow: 0 0 2rem #e5e7ff;
+        background-color: #e5e7ff;
+    }
+
+    &:nth-child(4n + 3) {
+        box-shadow: 0 0 2rem #fffce5;
+        background-color: #fffce5;
+    }
+}
+
+.post-children {
+    margin-left: 1%;
+    padding-left: 1%;
+    border-left: 1px solid black;
+}
