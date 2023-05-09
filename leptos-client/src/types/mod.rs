@@ -24,7 +24,7 @@ pub struct Post {
     pub time: DateTime<Utc>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ApiToken {
     pub token: String,
 }

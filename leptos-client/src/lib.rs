@@ -1,13 +1,14 @@
 use gloo_storage::{LocalStorage, Storage};
 use leptos::*;
 use leptos_router::*;
+use serde_json::Value;
 
 mod api;
 mod components;
 mod pages;
 mod types;
 
-use self::{components::*, pages::*};
+use self::{components::*, pages::*, types::*};
 const DEFAULT_API_URL: &str = "http://127.0.0.1:7700";
 const API_TOKEN_STORAGE_KEY: &str = "api-token";
 
@@ -15,22 +16,25 @@ const API_TOKEN_STORAGE_KEY: &str = "api-token";
 pub fn App(cx: Scope) -> impl IntoView {
     // -- signals -- //
 
-    let authorized_api = create_rw_signal(cx, None::<api::AuthorizedApi>);
+    let (token, set_token) = create_signal(cx, None::<ApiToken>);
     let user_info = create_rw_signal(cx, None::<types::UserInfo>);
-    let logged_in = Signal::derive(cx, move || authorized_api.get().is_some());
+    let logged_in = Signal::derive(cx, move || token.get().is_some());
 
     // -- actions -- //
 
     let fetch_user_info = create_action(cx, move |_| async move {
-        match authorized_api.get() {
-            Some(api) => match api.user_info().await {
-                Ok(info) => {
-                    user_info.update(|i| *i = Some(info));
+        match token.get() {
+            Some(token) => {
+                match api::load_user(token.body_as_object::<Value>().unwrap()["ID"].as_str()).await
+                {
+                    Ok(info) => {
+                        user_info.update(|i| *i = Some(info));
+                    }
+                    Err(err) => {
+                        log::error!("Unable to fetch user info: {err}")
+                    }
                 }
-                Err(err) => {
-                    log::error!("Unable to fetch user info: {err}")
-                }
-            },
+            }
             None => {
                 log::error!("Unable to fetch user info: not logged in")
             }
@@ -38,20 +42,8 @@ pub fn App(cx: Scope) -> impl IntoView {
     });
 
     let logout = create_action(cx, move |_| async move {
-        match authorized_api.get() {
-            Some(api) => match api.logout().await {
-                Ok(_) => {
-                    authorized_api.update(|a| *a = None);
-                    user_info.update(|i| *i = None);
-                }
-                Err(err) => {
-                    log::error!("Unable to logout: {err}")
-                }
-            },
-            None => {
-                log::error!("Unable to logout user: not logged in")
-            }
-        }
+        set_token.update(|a| *a = None);
+        user_info.update(|i| *i = None);
     });
 
     // -- callbacks -- //
@@ -62,12 +54,8 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     // -- init API -- //
 
-    let unauthorized_api = api::UnauthorizedApi::new(DEFAULT_API_URL);
-    if let Ok(token) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
-        let api = api::AuthorizedApi::new(DEFAULT_API_URL, token);
-
-        authorized_api.update(|a| *a = Some(api));
-        fetch_user_info.dispatch(());
+    if let Ok(token_storage) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
+        set_token.update(|a| *a = Some(token_storage));
     }
 
     log::debug!("User is logged in: {}", logged_in.get());
@@ -76,10 +64,10 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     create_effect(cx, move |_| {
         log::debug!("API authorization state changed");
-        match authorized_api.get() {
-            Some(api) => {
+        match token.get() {
+            Some(token) => {
                 log::debug!("API is now authorized: save token in LocalStorage");
-                LocalStorage::set(API_TOKEN_STORAGE_KEY, api.token()).expect("LocalStorage::set");
+                LocalStorage::set(API_TOKEN_STORAGE_KEY, token).expect("LocalStorage::set");
             }
             None => {
                 log::debug!("API is no longer authorized: delete token from LocalStorage");
@@ -103,10 +91,9 @@ pub fn App(cx: Scope) -> impl IntoView {
               path=Page::Login.path()
               view=move |cx| view! { cx,
                 <Login
-                    api = unauthorized_api
-                    on_success = move |api| {
+                    on_success = move |t| {
                         log::info!("Successfully logged in");
-                        authorized_api.update(|v| *v = Some(api));
+                        set_token.update(|v| *v = Some(t));
                         let navigate = use_navigate(cx);
                         navigate(Page::Home.path(), Default::default()).expect("Home route");
                         fetch_user_info.dispatch(());
@@ -117,10 +104,9 @@ pub fn App(cx: Scope) -> impl IntoView {
               path=Page::Register.path()
               view=move |cx| view! { cx,
                 <Register
-                    api = unauthorized_api
-                    on_success = move |api| {
+                    on_success = move |t| {
                         log::info!("Successfully registered and logged in");
-                        authorized_api.update(|v| *v = Some(api));
+                        set_token.update(|v| *v = Some(t));
                         let navigate = use_navigate(cx);
                         navigate(Page::Home.path(), Default::default()).expect("Home route");
                         fetch_user_info.dispatch(());
@@ -130,7 +116,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             <Route
               path=Page::Posts.path()
               view=move |cx| view! { cx,
-                <Posts api=(if authorized_api.get().is_some() {api::ApiTypes::Authorized(authorized_api.get().unwrap())} else {api::ApiTypes::Unauthorized(unauthorized_api)})/>
+                <Posts token=token/>
             }/>
             <Route
             path=Page::NotFound.path()

@@ -4,11 +4,7 @@ use leptos_router::*;
 use crate::Page;
 
 #[component]
-pub fn NavBar<F>(
-    cx: Scope,
-    logged_in: Signal<bool>,
-    on_logout: F,
-) -> impl IntoView
+pub fn NavBar<F>(cx: Scope, logged_in: Signal<bool>, on_logout: F) -> impl IntoView
 where
     F: Fn() + 'static + Clone,
 {
@@ -27,6 +23,8 @@ where
             move |_| on_logout()
           }>"Logout"</a>
         </Show>
+        " | "
+        <A href=Page::Posts.path() >"Posts"</A>
       </nav>
     }
 }

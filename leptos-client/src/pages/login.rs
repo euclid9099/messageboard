@@ -2,16 +2,16 @@ use leptos::*;
 use leptos_router::*;
 
 use crate::{
-    api::{self, AuthorizedApi, UnauthorizedApi},
+    api::{self},
     components::credentials::*,
-    types::Credentials,
+    types::{ApiToken, Credentials},
     Page,
 };
 
 #[component]
-pub fn Login<F>(cx: Scope, api: UnauthorizedApi, on_success: F) -> impl IntoView
+pub fn Login<F>(cx: Scope, on_success: F) -> impl IntoView
 where
-    F: Fn(AuthorizedApi) + 'static + Clone,
+    F: Fn(ApiToken) + 'static + Clone,
 {
     let (login_error, set_login_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
@@ -24,7 +24,7 @@ where
         let on_success = on_success.clone();
         async move {
             set_wait_for_response.update(|w| *w = true);
-            let result = api.login(&credentials).await;
+            let result = api::login(&credentials).await;
             set_wait_for_response.update(|w| *w = false);
             match result {
                 Ok(res) => {

@@ -4,109 +4,102 @@ use serde_json::Value;
 use thiserror::Error;
 
 use crate::types::{self, *};
+use crate::DEFAULT_API_URL;
 
-#[derive(Clone)]
-pub enum ApiTypes {
-    Unauthorized(UnauthorizedApi),
-    Authorized(AuthorizedApi),
+pub async fn login(credentials: &Credentials) -> Result<ApiToken> {
+    let url = format!("{}/login", DEFAULT_API_URL);
+    authenticate(credentials, url).await
 }
 
-#[derive(Clone, Copy)]
-pub struct UnauthorizedApi {
-    pub url: &'static str,
+pub async fn register(credentials: &Credentials) -> Result<ApiToken> {
+    let url = format!("{}/signup", DEFAULT_API_URL);
+    authenticate(credentials, url).await
 }
 
-#[derive(Clone)]
-pub struct AuthorizedApi {
-    pub url: &'static str,
-    token: ApiToken,
-}
-
-impl UnauthorizedApi {
-    pub const fn new(url: &'static str) -> Self {
-        Self { url }
+async fn authenticate(credentials: &Credentials, url: String) -> Result<ApiToken> {
+    let response = Request::post(&url).json(credentials)?.send().await?;
+    let json_transformation = into_json::<types::Reply<ApiToken>>(response).await;
+    match json_transformation {
+        Ok(token_reply) => match token_reply.content {
+            Some(token) => Ok(token),
+            None => Err(Error::Api(token_reply.error.unwrap_or(types::Error {
+                message: "neither token nor response have been set".to_string(),
+            }))),
+        },
+        Err(e) => Err(e),
     }
-    pub async fn register(&self, credentials: &Credentials) -> Result<AuthorizedApi> {
-        let url = format!("{}/signup", self.url);
-        let response = Request::post(&url).json(credentials)?.send().await?;
-        let json_transformation = into_json::<types::Reply<ApiToken>>(response).await;
-        match json_transformation {
-            Ok(token_reply) => match token_reply.content {
-                Some(token) => Ok(AuthorizedApi::new(self.url, token)),
-                None => Err(Error::Api(token_reply.error.unwrap_or(types::Error {
-                    message: "neither token nor response have been set".to_string(),
-                }))),
-            },
-            Err(e) => Err(e),
+}
+
+pub async fn load_user(user_id: Option<&str>) -> Result<UserInfo> {
+    let mut url = format!("{}/users", DEFAULT_API_URL,);
+    if let Some(user_id) = user_id {
+        url.push_str(&format!("/{}", user_id));
+    }
+    log::debug!("User url: {}", url);
+
+    let user_reply: types::Reply<Vec<DBReply<Vec<UserInfo>>>> =
+        into_json(Request::get(&url).send().await?).await?;
+    match user_reply.content {
+        Some(user_in_db) => {
+            let user = user_in_db.get(0).unwrap().result.get(0).unwrap().to_owned();
+            log::debug!("User info: {:?}", user);
+            return Ok(user);
+        }
+        None => {
+            return Err(Error::Api(
+                user_reply.error.expect("An unknown error occured"),
+            ))
         }
     }
-    pub async fn login(&self, credentials: &Credentials) -> Result<AuthorizedApi> {
-        let url = format!("{}/login", self.url);
-        let response = Request::post(&url).json(credentials)?.send().await?;
-        let json_transformation = into_json::<types::Reply<ApiToken>>(response).await;
-        match json_transformation {
-            Ok(token_reply) => match token_reply.content {
-                Some(token) => Ok(AuthorizedApi::new(self.url, token)),
-                None => Err(Error::Api(token_reply.error.unwrap_or(types::Error {
-                    message: "neither token nor response have been set".to_string(),
-                }))),
-            },
-            Err(e) => Err(e),
-        }
-    }
-    pub async fn send<T>(&self, req: Request) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        let response = req.send().await?;
-        into_json(response).await
-    }
 }
 
-impl AuthorizedApi {
-    pub const fn new(url: &'static str, token: ApiToken) -> Self {
-        Self { url, token }
+pub async fn load_post(
+    post_id: Option<String>,
+    parent: Option<String>,
+    after_timestamp: Option<String>,
+    usertoken: Option<ApiToken>,
+) -> Result<Vec<Post>> {
+    let mut url = format!("{}/posts", DEFAULT_API_URL,);
+    if let Some(post_id) = post_id {
+        url.push_str(&format!("/{}", post_id));
     }
-    pub async fn send<T>(&self, req: Request) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
-        let response = req.header("x-token", &self.token.token).send().await?;
-        into_json(response).await
+    url.push('?');
+
+    if let Some(parent) = parent {
+        url.push_str(&format!("&parent={}", parent));
     }
-    pub async fn logout(&self) -> Result<()> {
-        return Ok(());
+    if let Some(after) = after_timestamp {
+        url.push_str(&format!("&after={}", after));
     }
-    pub async fn user_info(&self) -> Result<UserInfo> {
-        log::debug!("{}", self.token.token);
-        let user_url = format!(
-            "{}/users/{}",
-            self.url,
-            self.token.clone().body_as_object::<Value>().unwrap()["ID"]
+    log::debug!("token: {:?}", usertoken);
+    if let Some(token) = usertoken.clone() {
+        url.push_str(&format!(
+            "&as={}",
+            token.body_as_object::<Value>().unwrap()["ID"]
                 .as_str()
                 .unwrap()
-        );
-        log::debug!("User info url: {}", user_url);
-
-        let user_reply: types::Reply<Vec<DBReply<Vec<UserInfo>>>> =
-            into_json(Request::get(&user_url).send().await?).await?;
-        match user_reply.content {
-            Some(user_in_db) => {
-                let user = user_in_db.get(0).unwrap().result.get(0).unwrap().to_owned();
-                log::debug!("User info: {:?}", user);
-                return Ok(user);
-            }
-            None => {
-                return Err(Error::Api(
-                    user_reply
-                        .error
-                        .expect("neither token nor response content have been set"),
-                ))
-            }
-        }
+                .to_string()
+        ));
     }
-    pub fn token(&self) -> &ApiToken {
-        &self.token
+
+    log::debug!("Post url: {}", url);
+
+    let req = match usertoken {
+        Some(token) => Request::get(&url).header("x-token", &token.token),
+        None => Request::get(&url),
+    };
+
+    let post_reply: types::Reply<DBReply<Vec<Post>>> = into_json(req.send().await?).await?;
+    match post_reply.content {
+        Some(user_in_db) => {
+            let posts = user_in_db.result.to_owned();
+            return Ok(posts);
+        }
+        None => {
+            return Err(Error::Api(
+                post_reply.error.expect("An unknown error occured"),
+            ))
+        }
     }
 }
 
