@@ -50,6 +50,9 @@ const getPosts = async ({
 	response: Response;
 }) => {
 	await responseSkeleton(response, async () => {
+		//sleep for 1 second
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		const fields = [
 			"*",
 			"count(<-likes<-user) AS likes",
@@ -203,7 +206,7 @@ const relateOnTable = async ({
 				{ post: post.id }
 			);
 		}
-		const result = await db.query(
+		await db.query(
 			request.url.searchParams.has("reset")
 				? `DELETE ${table} WHERE in = ($auth.id) AND out = $post`
 				: `RELATE ($auth.id)->${table}->($post)`,
@@ -211,6 +214,16 @@ const relateOnTable = async ({
 				post: post.id,
 			}
 		);
+
+		const result = (
+			await db.query(
+				`SELECT *, count(<-likes<-user) AS likes, count(<-dislikes<-user) AS dislikes, count(->response->post) AS responses, ($auth.id) INSIDE <-dislikes<-user AS disliked, ($auth.id) INSIDE <-likes<-user AS liked FROM $post FETCH author`,
+				{
+					post: post.id,
+				}
+			)
+		)[0];
+
 		db.close();
 
 		return result;
