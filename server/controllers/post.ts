@@ -65,7 +65,7 @@ const getPosts = async ({
 		if (request.url.searchParams.has("after")) conditions.push("time > $after");
 		if (params?.id) conditions.push("id = $id");
 		if (request.url.searchParams.has("parent")) conditions.push("$parent INSIDE <-response<-post");
-		else conditions.push("count(<-response<-post) = 0");
+		else if (!params?.id) conditions.push("count(<-response<-post) = 0");
 
 		return (
 			await Surreal.Instance.query(
