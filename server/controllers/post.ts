@@ -1,7 +1,7 @@
 import Surreal from "https://deno.land/x/surrealdb@v0.2.0/mod.ts";
 import { Request, Response } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 
-import { db_url, decode_jwt, responseSkeleton } from "../helper.ts";
+import { db_url, decode_jwt, responseSkeleton, post_fields } from "../helper.ts";
 
 const createPost = async ({ request, response }: { request: Request; response: Response }) => {
 	await responseSkeleton(response, async () => {
@@ -24,9 +24,12 @@ const createPost = async ({ request, response }: { request: Request; response: R
 			throw new Error("specified parent post doesn't exist");
 		}
 
-		const result = await db.query("CREATE post SET message = $message", {
-			message: body.message,
-		});
+		const result = await db.query(
+			`SELECT ${post_fields.join(",")} FROM (CREATE post SET message = $message) FETCH author`,
+			{
+				message: body.message,
+			}
+		);
 		if (request.url.searchParams.has("parent") && result[0].status === "OK") {
 			await db.query("RELATE ($parent)->response->($new)", {
 				parent: request.url.searchParams.get("parent"),
@@ -36,7 +39,7 @@ const createPost = async ({ request, response }: { request: Request; response: R
 
 		db.close();
 
-		return result;
+		return result[0];
 	});
 };
 
@@ -53,12 +56,7 @@ const getPosts = async ({
 		//sleep for 1 second
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 
-		const fields = [
-			"*",
-			"count(<-likes<-user) AS likes",
-			"count(<-dislikes<-user) AS dislikes",
-			"count(->response->post) AS responses",
-		];
+		const fields = new Array(...post_fields);
 		if (request.url.searchParams.has("as")) {
 			fields.push("$user INSIDE <-likes<-user AS liked");
 			fields.push("$user INSIDE <-dislikes<-user AS disliked");
@@ -118,10 +116,19 @@ const editPost = async ({
 		}
 
 		const db = new Surreal(`${db_url}/rpc`, jwt);
-		const result = await db.change(post.id, { message: body.message });
+		//TODO rewrite to fetch author
+		const result = await db.query(
+			`SELECT ${post_fields.join(
+				","
+			)} FROM (UPDATE $id SET message = $message RETURN id) FETCH author`,
+			{
+				id: params.id,
+				message: body.message,
+			}
+		);
 		db.close();
 
-		return result;
+		return result[0];
 	});
 };
 
@@ -217,7 +224,9 @@ const relateOnTable = async ({
 
 		const result = (
 			await db.query(
-				`SELECT *, count(<-likes<-user) AS likes, count(<-dislikes<-user) AS dislikes, count(->response->post) AS responses, ($auth.id) INSIDE <-dislikes<-user AS disliked, ($auth.id) INSIDE <-likes<-user AS liked FROM $post FETCH author`,
+				`SELECT ${post_fields.join(
+					","
+				)}, ($auth.id) INSIDE <-dislikes<-user AS disliked, ($auth.id) INSIDE <-likes<-user AS liked FROM $post FETCH author`,
 				{
 					post: post.id,
 				}

@@ -2,6 +2,13 @@ import { Response } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 
 const db_url = "http://127.0.0.1:8000";
 
+const post_fields = [
+	"*",
+	"count(<-likes<-user) AS likes",
+	"count(<-dislikes<-user) AS dislikes",
+	"count(->response->post) AS responses",
+];
+
 const decode_jwt = (jwt: string) => {
 	const [header, payload] = jwt
 		.split(".")
@@ -40,4 +47,4 @@ const responseSkeleton = async (response: Response, callBack: () => unknown) => 
 	}
 };
 
-export { db_url, decode_jwt, responseSkeleton };
+export { db_url, decode_jwt, responseSkeleton, post_fields };
