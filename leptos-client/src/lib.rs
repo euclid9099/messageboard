@@ -24,17 +24,14 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     let fetch_user_info = create_action(cx, move |_| async move {
         match token.get() {
-            Some(token) => {
-                match api::load_user(token.body_as_object::<Value>().unwrap()["ID"].as_str()).await
-                {
-                    Ok(info) => {
-                        user_info.update(|i| *i = Some(info));
-                    }
-                    Err(err) => {
-                        log::error!("Unable to fetch user info: {err}")
-                    }
+            Some(token) => match api::load_user(Some(token.id())).await {
+                Ok(info) => {
+                    user_info.update(|i| *i = Some(info));
                 }
-            }
+                Err(err) => {
+                    log::error!("Unable to fetch user info: {err}")
+                }
+            },
             None => {
                 log::error!("Unable to fetch user info: not logged in")
             }

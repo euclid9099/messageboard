@@ -2,6 +2,7 @@ use base64::{engine::general_purpose, Engine};
 use chrono::{DateTime, Utc};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize)]
 pub struct Credentials {
@@ -13,6 +14,7 @@ pub struct Credentials {
 pub struct UserInfo {
     pub id: String,
     pub username: Option<String>,
+    pub admin: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -32,30 +34,31 @@ pub struct Post {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ApiToken {
     pub token: String,
+    id: String,
 }
 
 impl ApiToken {
-    pub fn body_as_object<T>(self) -> Option<T>
-    where
-        T: DeserializeOwned,
-    {
-        match self.token.split(".").nth(1) {
-            Some(payload) => {
-                let payload = base64::engine::GeneralPurpose::new(
-                    &base64::alphabet::STANDARD,
-                    general_purpose::NO_PAD,
-                )
-                .decode(payload)
-                .expect("token is not valid base64 encoding");
-                let payload = String::from_utf8(payload).expect("token payload is not valid utf8");
-                log::debug!("API token payload: {}", payload);
-                serde_json::from_str(&payload).ok()
-            }
-            None => {
-                log::error!("Unable to decode API token payload");
-                None
-            }
+    pub fn new(token: String) -> Self {
+        let payload = base64::engine::GeneralPurpose::new(
+            &base64::alphabet::STANDARD,
+            general_purpose::NO_PAD,
+        )
+        .decode(token.split(".").nth(1).expect("invalid token"))
+        .expect("token is not valid base64 encoding");
+        ApiToken {
+            token,
+            id: serde_json::from_str::<Value>(
+                &String::from_utf8(payload).expect("token payload is not valid utf8"),
+            )
+            .unwrap()["ID"]
+                .as_str()
+                .unwrap()
+                .to_string(),
         }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 }
 

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::{
     api,
     types::{ApiToken, Post},
@@ -13,6 +11,7 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
     let (wait_for_reload, set_wait_for_reload) = create_signal(cx, false);
     let (posts, set_posts) = create_signal(cx, Vec::<Post>::new());
     let (self_post, set_self_post) = create_signal(cx, post.clone());
+    let (edit, set_edit) = create_signal(cx, false);
 
     let reload_action = create_action(cx, move |()| {
         set_wait_for_reload.update(|v| *v = true);
@@ -36,7 +35,6 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
 
     let impression_action = create_action(cx, move |(positive, reset): &(bool, bool)| {
         set_wait_for_reload.update(|v| *v = true);
-        let token = token.clone();
         let fut = api::post_impression(self_post.get().id, token.get().unwrap(), *positive, *reset);
         async move {
             let res = fut.await;
@@ -52,7 +50,7 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
                 }
             }
 
-            set_wait_for_reload.update(|v| *v = false);
+            set_wait_for_reload.set(false);
         }
     });
 
@@ -86,6 +84,27 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
         }
     });
 
+    let submit_edit_action = create_action(cx, move |content: &String| {
+        set_wait_for_reload.set(true);
+        let fut = api::edit_post(self_post.get().id, token.get().unwrap(), content.clone());
+        async move {
+            let res = fut.await;
+
+            match res {
+                Ok(res) => {
+                    set_loading_error.update(|e| *e = None);
+                    set_self_post.update(|p| *p = res.clone());
+                }
+                Err(err) => {
+                    log::debug!("loading error: {}", err);
+                    set_loading_error.update(|e| *e = Some(err.to_string()));
+                }
+            }
+
+            set_wait_for_reload.set(false);
+        }
+    });
+
     view! {cx,
         <div class="post">
             <div class="post-content">
@@ -99,21 +118,49 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
                         on:click=move|_| reload_action.dispatch(())>
                         "reload post"
                     </button>
-                    <p>{post.time.to_rfc3339()}</p>
+                    <p>{format!("{}", post.time.format("%d. %b %Y at %k:%M"))}</p>
                 </div>
-                <div class="post-body">
-                    <input type="text" value=post.message />
-                </div>
+                {move || if token.get().is_some() && self_post.get().author.is_some() && self_post.get().author.unwrap().id == token.get().unwrap().id() {
+                    view! {cx, <div class="post-body">
+                        <p id=self_post.get().id contenteditable=move || if edit.get() {"true"} else {"false"}>{move || self_post.get().message}</p>
+                        <button
+                            disabled=move || wait_for_reload.get()
+                            on:click=move |_| {
+                                set_edit.set(!edit.get());
+                                if edit.get() {
+                                    log::debug!("start edit");
+                                } else {
+                                    log::debug!("save new content");
+                                    match leptos_dom::document().get_element_by_id(&self_post.get().id) {
+                                        Some(el) => {
+                                            let new_content = el.text_content().unwrap_or("".to_string());
+                                            log::debug!("{}", new_content);
+                                            submit_edit_action.dispatch(new_content);
+                                        }
+                                        None => log::debug!("no element found"),
+                                    }
+                                }
+                            }>
+                            {move || if edit.get() {"save"} else {"edit"}}
+                        </button>
+                    </div>}
+                } else {
+                    view! {cx, <div class="post-body">
+                        <p>{move || self_post.get().message}</p>
+                    </div>}
+                }}
                 <div class="post-controls">
                     <button
                         disabled=move || token.get().is_none() || wait_for_reload.get()
                         on:click=move |_| impression_action.dispatch((true, self_post.get().liked.unwrap()))>
                         <i class=move || if self_post.get().liked.unwrap_or(false) {"material-icons selected positive"} else {"material-icons"}>"thumb_up"</i>
+                        <p>{move|| self_post.get().likes}</p>
                     </button>
                     <button
                         disabled=move || token.get().is_none() || wait_for_reload.get()
                         on:click=move |_| impression_action.dispatch((false, self_post.get().disliked.unwrap()))>
                         <i class=move || if self_post.get().disliked.unwrap_or(false) {"material-icons selected negative"} else {"material-icons"}>"thumb_down"</i>
+                        <p>{move|| self_post.get().dislikes}</p>
                     </button>
                 </div>
             </div>

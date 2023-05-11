@@ -1,6 +1,6 @@
 use gloo_net::http::{Request, Response};
 use serde::de::DeserializeOwned;
-use serde_json::Value;
+use serde_json::{json, Value};
 use thiserror::Error;
 
 use crate::types::{self, *};
@@ -18,10 +18,10 @@ pub async fn register(credentials: &Credentials) -> Result<ApiToken> {
 
 async fn authenticate(credentials: &Credentials, url: String) -> Result<ApiToken> {
     let response = Request::post(&url).json(credentials)?.send().await?;
-    let json_transformation = into_json::<types::Reply<ApiToken>>(response).await;
+    let json_transformation = into_json::<types::Reply<Value>>(response).await;
     match json_transformation {
         Ok(token_reply) => match token_reply.content {
-            Some(token) => Ok(token),
+            Some(val) => Ok(ApiToken::new(val["token"].as_str().unwrap().to_string())),
             None => Err(Error::Api(token_reply.error.unwrap_or(types::Error {
                 message: "neither token nor response have been set".to_string(),
             }))),
@@ -41,12 +41,12 @@ pub async fn load_user(user_id: Option<&str>) -> Result<UserInfo> {
         into_json(Request::get(&url).send().await?).await?;
     match user_reply.content {
         Some(user_in_db) => match user_in_db.get(0).unwrap() {
-            DBReply::OK { time, result } => {
+            DBReply::OK { time: _, result } => {
                 let user = result.get(0).unwrap().to_owned();
                 log::debug!("User info: {:?}", user);
                 return Ok(user);
             }
-            DBReply::ERR { time, detail } => {
+            DBReply::ERR { time: _, detail } => {
                 return Err(Error::Api(types::Error {
                     message: detail.to_owned(),
                 }))
@@ -80,13 +80,7 @@ pub async fn load_post(
     }
     log::debug!("token: {:?}", usertoken);
     if let Some(token) = usertoken.clone() {
-        url.push_str(&format!(
-            "&as={}",
-            token.body_as_object::<Value>().unwrap()["ID"]
-                .as_str()
-                .unwrap()
-                .to_string()
-        ));
+        url.push_str(&format!("&as={}", token.id()));
     }
 
     log::debug!("Post url: {}", url);
@@ -99,19 +93,19 @@ pub async fn load_post(
     let post_reply: types::Reply<DBReply<Vec<Post>>> = into_json(req.send().await?).await?;
     match post_reply.content {
         Some(dbreply) => match dbreply {
-            DBReply::OK { time, result } => {
+            DBReply::OK { time: _, result } => {
                 return Ok(result);
             }
-            DBReply::ERR { time, detail } => {
+            DBReply::ERR { time: _, detail } => {
                 return Err(Error::Api(types::Error {
                     message: detail.to_owned(),
                 }))
             }
         },
         None => {
-            return Err(Error::Api(
-                post_reply.error.expect("An unknown error occured"),
-            ))
+            return Err(Error::Api(post_reply.error.unwrap_or(types::Error {
+                message: "An unknown error occured".to_string(),
+            })))
         }
     }
 }
@@ -151,6 +145,34 @@ pub async fn post_impression(
         },
         None => {
             return Err(Error::Api(post_reply.error.unwrap_or(types::Error {
+                message: "An unknown error occured".to_string(),
+            })))
+        }
+    }
+}
+
+pub async fn edit_post(post_id: String, usertoken: ApiToken, content: String) -> Result<Post> {
+    let mut url = format!("{}/posts/{}", DEFAULT_API_URL, post_id);
+    log::debug!("Edit url: {}", url);
+
+    let req = Request::patch(&url)
+        .header("x-token", &usertoken.token)
+        .json(&json!({ "message": content }))?;
+
+    let res: types::Reply<DBReply<Vec<Post>>> = into_json(req.send().await?).await?;
+    match res.content {
+        Some(dbreply) => match dbreply {
+            DBReply::OK { time: _, result } => {
+                return Ok(result.get(0).unwrap().to_owned());
+            }
+            DBReply::ERR { time: _, detail } => {
+                return Err(Error::Api(types::Error {
+                    message: detail.to_owned(),
+                }))
+            }
+        },
+        None => {
+            return Err(Error::Api(res.error.unwrap_or(types::Error {
                 message: "An unknown error occured".to_string(),
             })))
         }
