@@ -15,13 +15,14 @@ const createPost = async ({ request, response }: { request: Request; response: R
 
 		if (
 			request.url.searchParams.has("parent") &&
-			!(
-				await Surreal.Instance.query("SELECT * FROM $post", {
-					post: request.url.searchParams.get("parent"),
-				})
-			)[0].result[0]
+			(!request.url.searchParams.get("parent")!.startsWith("post:") ||
+				!(
+					await Surreal.Instance.query("SELECT * FROM $post", {
+						post: request.url.searchParams.get("parent"),
+					})
+				)[0].result[0])
 		) {
-			throw new Error("specified parent post doesn't exist");
+			throw new Error("parent post does not exist");
 		}
 
 		const result = await db.query(
