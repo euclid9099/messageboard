@@ -75,6 +75,12 @@ pub struct Reply<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct EmptyReply {
+    pub message: String,
+    pub error: Option<Error>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "status")]
 pub enum DBReply<T> {
     OK { time: String, result: T },

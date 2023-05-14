@@ -3,18 +3,25 @@ use leptos::*;
 use crate::{
     api::{self},
     components::*,
-    types::{ApiToken, Post},
+    types::{ApiToken, Post, UserInfo},
 };
 
 #[component]
-pub fn Posts(cx: Scope, token: ReadSignal<Option<ApiToken>>) -> impl IntoView {
+pub fn Posts(
+    cx: Scope,
+    user: ReadSignal<Option<UserInfo>>,
+    token: ReadSignal<Option<ApiToken>>,
+) -> impl IntoView {
     let (loading_error, set_loading_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
     let (posts, set_posts) = create_signal(cx, Vec::<Post>::new());
+    let (create_post_overlay, set_create_post_overlay) = create_signal(cx, None::<Option<Post>>);
+
+    log::debug!("Posts page gets the following user: {:?}", user.get());
 
     let load_posts_action = create_action(cx, move |()| {
         let latest_post_time = match posts.get().last() {
-            Some(p) => p.time.to_rfc3339(),
+            Some(p) => format!("{}", p.time.format("%Y-%m-%dT%H:%M:%S%.fZ")),
             None => "0".to_string(),
         };
         async move {
@@ -38,6 +45,24 @@ pub fn Posts(cx: Scope, token: ReadSignal<Option<ApiToken>>) -> impl IntoView {
 
     view! {cx,
         <h1>"Posts"</h1>
+        <button class="create-post-button"
+            on:click=move |_| set_create_post_overlay.set(Some(None))>"Create post"</button>
+        {move || if create_post_overlay.get().is_some() { view!{ cx,
+            <>
+                <CreatePost
+                    token=token
+                    on_close=move || {
+                        log::debug!("Close create post overlay");
+                        set_create_post_overlay.set(None);
+                        load_posts_action.dispatch(());}
+                    parent=create_post_overlay.get().unwrap()
+                ></CreatePost>
+            </>
+          }
+        } else {
+            view!{cx, <> </>}
+        }
+        }
         <div>
             <For
                 each=move|| posts.get()
@@ -45,7 +70,7 @@ pub fn Posts(cx: Scope, token: ReadSignal<Option<ApiToken>>) -> impl IntoView {
                 view=move |cx, p: Post| {
                     view! { cx,
                         <div class="tl-post">
-                        <PostView post=p token=token/>
+                        <PostView as_user=user post=p token=token new_post_overlay=set_create_post_overlay/>
                         </div>
                     }
                 }

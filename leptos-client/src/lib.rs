@@ -17,7 +17,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     // -- signals -- //
 
     let (token, set_token) = create_signal(cx, None::<ApiToken>);
-    let user_info = create_rw_signal(cx, None::<types::UserInfo>);
+    let (user_info, set_user_info) = create_signal(cx, None::<types::UserInfo>);
     let logged_in = Signal::derive(cx, move || token.get().is_some());
 
     // -- actions -- //
@@ -26,7 +26,7 @@ pub fn App(cx: Scope) -> impl IntoView {
         match token.get() {
             Some(token) => match api::load_user(Some(token.id())).await {
                 Ok(info) => {
-                    user_info.update(|i| *i = Some(info));
+                    set_user_info.set(Some(info));
                 }
                 Err(err) => {
                     log::error!("Unable to fetch user info: {err}")
@@ -40,7 +40,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     let logout = create_action(cx, move |_| async move {
         set_token.update(|a| *a = None);
-        user_info.update(|i| *i = None);
+        set_user_info.set(None);
     });
 
     // -- callbacks -- //
@@ -52,7 +52,8 @@ pub fn App(cx: Scope) -> impl IntoView {
     // -- init API -- //
 
     if let Ok(token_storage) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
-        set_token.update(|a| *a = Some(token_storage));
+        set_token.set(Some(token_storage));
+        fetch_user_info.dispatch(());
     }
 
     log::debug!("User is logged in: {}", logged_in.get());
@@ -113,7 +114,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             <Route
               path=Page::Posts.path()
               view=move |cx| view! { cx,
-                <Posts token=token/>
+                <Posts user=user_info token=token/>
             }/>
             <Route
             path=Page::NotFound.path()

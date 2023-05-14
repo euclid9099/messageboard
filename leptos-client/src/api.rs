@@ -152,7 +152,7 @@ pub async fn post_impression(
 }
 
 pub async fn edit_post(post_id: String, usertoken: ApiToken, content: String) -> Result<Post> {
-    let mut url = format!("{}/posts/{}", DEFAULT_API_URL, post_id);
+    let url = format!("{}/posts/{}", DEFAULT_API_URL, post_id);
     log::debug!("Edit url: {}", url);
 
     let req = Request::patch(&url)
@@ -177,6 +177,53 @@ pub async fn edit_post(post_id: String, usertoken: ApiToken, content: String) ->
             })))
         }
     }
+}
+
+pub async fn create_post(
+    usertoken: Option<ApiToken>,
+    parent_id: Option<String>,
+    content: String,
+) -> Result<Post> {
+    let mut url = format!("{}/posts", DEFAULT_API_URL);
+    if let Some(p_id) = parent_id {
+        url.push_str(&format!("?parent={}", p_id));
+    }
+    log::debug!("New post url: {}", url);
+
+    let mut req = Request::post(&url);
+
+    if let Some(token) = usertoken {
+        req = req.header("x-token", &token.token);
+    }
+    req = req.json(&json!({ "message": content }))?;
+
+    let res: types::Reply<DBReply<Vec<Post>>> = into_json(req.send().await?).await?;
+    match res.content {
+        Some(dbreply) => match dbreply {
+            DBReply::OK { time: _, result } => {
+                return Ok(result.get(0).unwrap().to_owned());
+            }
+            DBReply::ERR { time: _, detail } => {
+                return Err(Error::Api(types::Error {
+                    message: detail.to_owned(),
+                }))
+            }
+        },
+        None => {
+            return Err(Error::Api(res.error.unwrap_or(types::Error {
+                message: "An unknown error occured".to_string(),
+            })))
+        }
+    }
+}
+
+pub async fn delete_post(post_id: String, usertoken: ApiToken) -> Result<types::EmptyReply> {
+    let url = format!("{}/posts/{}", DEFAULT_API_URL, post_id);
+    log::debug!("Delete url: {}", url);
+
+    let req = Request::delete(&url).header("x-token", &usertoken.token);
+
+    into_json(req.send().await?).await
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

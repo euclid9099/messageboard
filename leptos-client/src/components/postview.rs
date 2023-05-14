@@ -1,11 +1,17 @@
 use crate::{
     api,
-    types::{ApiToken, Post},
+    types::{ApiToken, Post, UserInfo},
 };
 use leptos::*;
 
 #[component]
-pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> impl IntoView {
+pub fn PostView(
+    cx: Scope,
+    as_user: ReadSignal<Option<UserInfo>>,
+    post: Post,
+    token: ReadSignal<Option<ApiToken>>,
+    new_post_overlay: WriteSignal<Option<Option<Post>>>,
+) -> impl IntoView {
     let (loading_error, set_loading_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
     let (wait_for_reload, set_wait_for_reload) = create_signal(cx, false);
@@ -105,6 +111,27 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
         }
     });
 
+    let delete_self_action = create_action(cx, move |()| {
+        set_wait_for_reload.set(true);
+        let fut = api::delete_post(self_post.get().id, token.get().unwrap());
+        async move {
+            let res = fut.await;
+
+            match res {
+                Ok(res) => match res.message.as_str() {
+                    "ok" => log::debug!("database deletion successful"),
+                    m => log::debug!("database deletion failed: {}", m),
+                },
+                Err(err) => {
+                    log::debug!("unable to delete self: {}", err);
+                    set_loading_error.set(Some(err.to_string()));
+                }
+            }
+
+            set_wait_for_reload.set(false);
+        }
+    });
+
     view! {cx,
         <div class="post">
             <div class="post-content">
@@ -120,35 +147,63 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
                     </button>
                     <p>{format!("{}", post.time.format("%d. %b %Y at %k:%M"))}</p>
                 </div>
-                {move || if token.get().is_some() && self_post.get().author.is_some() && self_post.get().author.unwrap().id == token.get().unwrap().id() {
-                    view! {cx, <div class="post-body">
-                        <p id=self_post.get().id contenteditable=move || if edit.get() {"true"} else {"false"}>{move || self_post.get().message}</p>
-                        <button
-                            disabled=move || wait_for_reload.get()
-                            on:click=move |_| {
-                                set_edit.set(!edit.get());
-                                if edit.get() {
-                                    log::debug!("start edit");
-                                } else {
-                                    log::debug!("save new content");
-                                    match leptos_dom::document().get_element_by_id(&self_post.get().id) {
-                                        Some(el) => {
-                                            let new_content = el.text_content().unwrap_or("".to_string());
-                                            log::debug!("{}", new_content);
-                                            submit_edit_action.dispatch(new_content);
+                <div class="post-body">
+                    <p id=self_post.get().id contenteditable=move || if edit.get() {"true"} else {"false"}>{move || self_post.get().message}</p>
+                {move || if token.get().is_some() {
+                    if self_post.get().author.is_some() && self_post.get().author.unwrap().id == token.get().unwrap().id() {
+                        view! {cx,
+                            <>
+                                <button
+                                    disabled=move || wait_for_reload.get()
+                                    on:click=move |_| {
+                                        set_edit.set(!edit.get());
+                                        if edit.get() {
+                                            log::debug!("start edit");
+                                        } else {
+                                            log::debug!("save new content");
+                                            match leptos_dom::document().get_element_by_id(&self_post.get().id) {
+                                                Some(el) => {
+                                                    let new_content = el.text_content().unwrap_or("".to_string());
+                                                    log::debug!("{}", new_content);
+                                                    if new_content != self_post.get().message {
+                                                        submit_edit_action.dispatch(new_content);
+                                                    }
+                                                }
+                                                None => log::debug!("no element found"),
+                                            }
                                         }
-                                        None => log::debug!("no element found"),
-                                    }
-                                }
-                            }>
-                            {move || if edit.get() {"save"} else {"edit"}}
-                        </button>
-                    </div>}
+                                    }>
+                                    {move || if edit.get() {"save"} else {"edit"}}
+                                </button>
+                                <button
+                                    disabled=move || wait_for_reload.get()
+                                    on:click=move |_| {
+                                        delete_self_action.dispatch(());
+                                    }>
+                                    "delete"
+                                </button>
+                            </>
+                        }
+                    } else if as_user.get().is_some() && as_user.get().unwrap().admin {
+                        view! {cx,
+                            <>
+                                <button
+                                    disabled=move || wait_for_reload.get()
+                                    on:click=move |_| {
+                                        delete_self_action.dispatch(());
+                                    }>
+                                    "delete"
+                                </button>
+                            </>
+                        }
+                    } else {
+                        view! {cx, <></>}
+                    }
+
                 } else {
-                    view! {cx, <div class="post-body">
-                        <p>{move || self_post.get().message}</p>
-                    </div>}
+                    view! {cx, <></>}
                 }}
+                </div>
                 <div class="post-controls">
                     <button
                         disabled=move || token.get().is_none() || wait_for_reload.get()
@@ -162,6 +217,10 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
                         <i class=move || if self_post.get().disliked.unwrap_or(false) {"material-icons selected negative"} else {"material-icons"}>"thumb_down"</i>
                         <p>{move|| self_post.get().dislikes}</p>
                     </button>
+                    <button
+                        on:click=move |_| new_post_overlay.set(Some(Some(self_post.get())))>
+                        <p>"respond"</p>
+                    </button>
                 </div>
             </div>
             <div class="post-children">
@@ -170,7 +229,7 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
                     key=|post| post.id.clone()
                     view=move |cx, p: Post| {
                         view! { cx,
-                            <PostView post=p token=token/>
+                            <PostView as_user=as_user post=p token=token new_post_overlay=new_post_overlay/>
                         }
                     }
                 />
@@ -187,7 +246,7 @@ pub fn PostView(cx: Scope, post: Post, token: ReadSignal<Option<ApiToken>>) -> i
                                 class="load-responses-button"
                                 disabled=move|| wait_for_response.get()
                                 on:click=move|_| load_children_action.dispatch(())>
-                                "Load responses (" {post.responses} ")"
+                                "Load responses (" {self_post.get().responses} ")"
                             </button>
                         </div>
                     }
