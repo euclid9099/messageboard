@@ -52,7 +52,6 @@ pub fn PostView(
                     set_self_post.update(|p| *p = res.clone());
                 }
                 Err(err) => {
-                    log::debug!("loading error: {}", err);
                     set_loading_error.update(|e| *e = Some(err.to_string()));
                 }
             }
@@ -103,7 +102,6 @@ pub fn PostView(
                     set_self_post.update(|p| *p = res.clone());
                 }
                 Err(err) => {
-                    log::debug!("loading error: {}", err);
                     set_loading_error.update(|e| *e = Some(err.to_string()));
                 }
             }
@@ -121,7 +119,6 @@ pub fn PostView(
             match res {
                 Ok(res) => match res.message.as_str() {
                     "ok" => {
-                        log::debug!("database deletion successful");
                         sibling_list.update(|p| {
                             p.retain(|p| p.id != self_post.get().id);
                         });
@@ -129,7 +126,6 @@ pub fn PostView(
                     m => log::debug!("database deletion failed: {}", m),
                 },
                 Err(err) => {
-                    log::debug!("unable to delete self: {}", err);
                     set_loading_error.set(Some(err.to_string()));
                 }
             }
@@ -164,13 +160,13 @@ pub fn PostView(
                                     on:click=move |_| {
                                         set_edit.set(!edit.get());
                                         if edit.get() {
-                                            log::debug!("start edit");
+
                                         } else {
-                                            log::debug!("save new content");
+
                                             match leptos_dom::document().get_element_by_id(&self_post.get().id) {
                                                 Some(el) => {
                                                     let new_content = el.text_content().unwrap_or("".to_string());
-                                                    log::debug!("{}", new_content);
+
                                                     if new_content != self_post.get().message {
                                                         submit_edit_action.dispatch(new_content);
                                                     }
@@ -239,6 +235,10 @@ pub fn PostView(
                         }
                     }
                 />
+                {move || loading_error.get().map(|err| view!{ cx,
+                    <p style ="color:red;" >{ err }</p>
+                  })
+                }
                 {move || if wait_for_response.get() {
                     view!{ cx,
                         <div>

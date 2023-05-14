@@ -1,11 +1,8 @@
-use leptos::{html::P, *};
-use leptos_router::*;
+use leptos::*;
 
 use crate::{
-    api::{self},
-    components::credentials::*,
-    types::{ApiToken, Credentials, Post},
-    Page,
+    api,
+    types::{ApiToken, Post},
 };
 
 #[component]
@@ -33,7 +30,6 @@ where
     };
 
     let new_post_action = create_action(cx, move |content: &String| {
-        log::debug!("Try to create new post with content: \"{}\"", content);
         let on_close = on_close.clone();
         let content = content.clone();
         let parent_id = parent_id.clone();
@@ -86,10 +82,11 @@ where
         })}
         <button
           class="new-post-button"
+          disabled=move || wait_for_response.get()
           on:click=move |_| {
-            log::debug!("Create post");
+
             new_post_action.dispatch(cont.get());
-          }>"Post"</button>
+          }>{if wait_for_response.get() {"processing"} else {"Post"}}</button>
       </div>
     }
 }

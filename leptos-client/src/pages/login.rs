@@ -17,7 +17,6 @@ where
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
 
     let login_action = create_action(cx, move |(username, password): &(String, String)| {
-        log::debug!("Try to login with {username}");
         let username = username.to_string();
         let password = password.to_string();
         let credentials = Credentials { username, password };

@@ -17,8 +17,6 @@ pub fn Posts(
     let (posts, set_posts) = create_signal(cx, Vec::<Post>::new());
     let (create_post_overlay, set_create_post_overlay) = create_signal(cx, None::<Option<Post>>);
 
-    log::debug!("Posts page gets the following user: {:?}", user.get());
-
     let load_posts_action = create_action(cx, move |()| {
         let latest_post_time = match posts.get().last() {
             Some(p) => format!("{}", p.time.format("%Y-%m-%dT%H:%M:%S%.fZ")),
@@ -52,7 +50,7 @@ pub fn Posts(
                 <CreatePost
                     token=token
                     on_close=move || {
-                        log::debug!("Close create post overlay");
+
                         set_create_post_overlay.set(None);
                         load_posts_action.dispatch(());}
                     parent=create_post_overlay.get().unwrap()

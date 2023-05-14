@@ -1,7 +1,6 @@
 use gloo_storage::{LocalStorage, Storage};
 use leptos::*;
 use leptos_router::*;
-use serde_json::Value;
 
 mod api;
 mod components;
@@ -55,23 +54,16 @@ pub fn App(cx: Scope) -> impl IntoView {
         set_token.set(Some(token_storage));
     }
 
-    log::debug!("User is logged in: {}", logged_in.get());
-
     // -- effects -- //
 
-    create_effect(cx, move |_| {
-        log::debug!("API authorization state changed");
-        match token.get() {
-            Some(token) => {
-                log::debug!("API is now authorized: save token in LocalStorage");
-                LocalStorage::set(API_TOKEN_STORAGE_KEY, token).expect("LocalStorage::set");
-                fetch_user_info.dispatch(());
-            }
-            None => {
-                log::debug!("API is no longer authorized: delete token from LocalStorage");
-                LocalStorage::delete(API_TOKEN_STORAGE_KEY);
-                set_user_info.set(None);
-            }
+    create_effect(cx, move |_| match token.get() {
+        Some(token) => {
+            LocalStorage::set(API_TOKEN_STORAGE_KEY, token).expect("LocalStorage::set");
+            fetch_user_info.dispatch(());
+        }
+        None => {
+            LocalStorage::delete(API_TOKEN_STORAGE_KEY);
+            set_user_info.set(None);
         }
     });
 

@@ -35,7 +35,6 @@ pub async fn load_user(user_id: Option<&str>) -> Result<UserInfo> {
     if let Some(user_id) = user_id {
         url.push_str(&format!("/{}", user_id));
     }
-    log::debug!("User url: {}", url);
 
     let user_reply: types::Reply<Vec<DBReply<Vec<UserInfo>>>> =
         into_json(Request::get(&url).send().await?).await?;
@@ -43,7 +42,7 @@ pub async fn load_user(user_id: Option<&str>) -> Result<UserInfo> {
         Some(user_in_db) => match user_in_db.get(0).unwrap() {
             DBReply::OK { time: _, result } => {
                 let user = result.get(0).unwrap().to_owned();
-                log::debug!("User info: {:?}", user);
+
                 return Ok(user);
             }
             DBReply::ERR { time: _, detail } => {
@@ -78,12 +77,10 @@ pub async fn load_post(
     if let Some(after) = after_timestamp {
         url.push_str(&format!("&after={}", after));
     }
-    log::debug!("token: {:?}", usertoken);
+
     if let Some(token) = usertoken.clone() {
         url.push_str(&format!("&as={}", token.id()));
     }
-
-    log::debug!("Post url: {}", url);
 
     let req = match usertoken {
         Some(token) => Request::get(&url).header("x-token", &token.token),
@@ -125,7 +122,6 @@ pub async fn post_impression(
     if reset {
         url.push_str("?reset");
     }
-    log::debug!("Like url: {}", url);
 
     let req = Request::post(&url).header("x-token", &usertoken.token);
 
@@ -137,7 +133,6 @@ pub async fn post_impression(
                 return Ok(result.get(0).unwrap().to_owned());
             }
             DBReply::ERR { time: _, detail } => {
-                log::debug!("Error: {}", detail);
                 return Err(Error::Api(types::Error {
                     message: detail.to_owned(),
                 }));
@@ -153,7 +148,6 @@ pub async fn post_impression(
 
 pub async fn edit_post(post_id: String, usertoken: ApiToken, content: String) -> Result<Post> {
     let url = format!("{}/posts/{}", DEFAULT_API_URL, post_id);
-    log::debug!("Edit url: {}", url);
 
     let req = Request::patch(&url)
         .header("x-token", &usertoken.token)
@@ -188,7 +182,6 @@ pub async fn create_post(
     if let Some(p_id) = parent_id {
         url.push_str(&format!("?parent={}", p_id));
     }
-    log::debug!("New post url: {}", url);
 
     let mut req = Request::post(&url);
 
@@ -219,7 +212,6 @@ pub async fn create_post(
 
 pub async fn delete_post(post_id: String, usertoken: ApiToken) -> Result<types::EmptyReply> {
     let url = format!("{}/posts/{}", DEFAULT_API_URL, post_id);
-    log::debug!("Delete url: {}", url);
 
     let req = Request::delete(&url).header("x-token", &usertoken.token);
 
