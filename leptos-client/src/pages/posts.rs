@@ -70,7 +70,8 @@ pub fn Posts(
                 view=move |cx, p: Post| {
                     view! { cx,
                         <div class="tl-post">
-                        <PostView as_user=user post=p token=token new_post_overlay=set_create_post_overlay/>
+                        <PostView as_user=user post=p token=token new_post_overlay=set_create_post_overlay
+                            sibling_list=set_posts/>
                         </div>
                     }
                 }

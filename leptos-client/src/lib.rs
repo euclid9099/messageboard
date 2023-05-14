@@ -53,7 +53,6 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     if let Ok(token_storage) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
         set_token.set(Some(token_storage));
-        fetch_user_info.dispatch(());
     }
 
     log::debug!("User is logged in: {}", logged_in.get());
@@ -66,10 +65,12 @@ pub fn App(cx: Scope) -> impl IntoView {
             Some(token) => {
                 log::debug!("API is now authorized: save token in LocalStorage");
                 LocalStorage::set(API_TOKEN_STORAGE_KEY, token).expect("LocalStorage::set");
+                fetch_user_info.dispatch(());
             }
             None => {
                 log::debug!("API is no longer authorized: delete token from LocalStorage");
                 LocalStorage::delete(API_TOKEN_STORAGE_KEY);
+                set_user_info.set(None);
             }
         }
     });

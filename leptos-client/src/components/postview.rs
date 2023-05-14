@@ -11,6 +11,7 @@ pub fn PostView(
     post: Post,
     token: ReadSignal<Option<ApiToken>>,
     new_post_overlay: WriteSignal<Option<Option<Post>>>,
+    sibling_list: WriteSignal<Vec<Post>>,
 ) -> impl IntoView {
     let (loading_error, set_loading_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
@@ -119,7 +120,12 @@ pub fn PostView(
 
             match res {
                 Ok(res) => match res.message.as_str() {
-                    "ok" => log::debug!("database deletion successful"),
+                    "ok" => {
+                        log::debug!("database deletion successful");
+                        sibling_list.update(|p| {
+                            p.retain(|p| p.id != self_post.get().id);
+                        });
+                    }
                     m => log::debug!("database deletion failed: {}", m),
                 },
                 Err(err) => {
@@ -229,7 +235,7 @@ pub fn PostView(
                     key=|post| post.id.clone()
                     view=move |cx, p: Post| {
                         view! { cx,
-                            <PostView as_user=as_user post=p token=token new_post_overlay=new_post_overlay/>
+                            <PostView as_user=as_user post=p token=token new_post_overlay=new_post_overlay sibling_list=set_posts/>
                         }
                     }
                 />
