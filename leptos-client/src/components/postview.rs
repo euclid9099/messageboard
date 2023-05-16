@@ -138,19 +138,24 @@ pub fn PostView(
         <div class="post">
             <div class="post-content">
                 <div class="post-header">
-                    <p>{match post.author {
+                    <p class="author">{match post.author {
                         Some(u) => u.username.unwrap_or("error loading username".to_string()),
                         None => "anonymous".to_string()
                     }}</p>
                     <button
+                        class="reload-button"
                         disabled=move|| wait_for_reload.get()
                         on:click=move|_| reload_action.dispatch(())>
-                        "reload post"
+                        <span class="material-symbols-outlined">
+                        "sync"
+                        </span>
+                        <p>"reload"</p>
                     </button>
-                    <p>{format!("{}", post.time.format("%d. %b %Y at %k:%M"))}</p>
+                    <p class="date">{format!("{}", post.time.format("%d. %b %Y at %k:%M"))}</p>
                 </div>
                 <div class="post-body">
                     <p id=self_post.get().id contenteditable=move || if edit.get() {"true"} else {"false"}>{move || self_post.get().message}</p>
+                    <div class="reactions">
                 {move || if token.get().is_some() {
                     if self_post.get().author.is_some() && self_post.get().author.unwrap().id == token.get().unwrap().id() {
                         view! {cx,
@@ -175,14 +180,27 @@ pub fn PostView(
                                             }
                                         }
                                     }>
-                                    {move || if edit.get() {"save"} else {"edit"}}
+                                    {move || if edit.get() {view! {cx,
+                                        <span class="material-symbols-outlined">
+                                        "save"
+                                        </span>
+                                        <p>"save"</p>
+                                    }} else {view! {cx,
+                                        <span class="material-symbols-outlined">
+                                        "edit"
+                                        </span>
+                                        <p>"edit"</p>
+                                    }}}
                                 </button>
                                 <button
                                     disabled=move || wait_for_reload.get()
                                     on:click=move |_| {
                                         delete_self_action.dispatch(());
                                     }>
+                                    <span class="material-symbols-outlined">
                                     "delete"
+                                    </span>
+                                    <p>"delete"</p>
                                 </button>
                             </>
                         }
@@ -194,7 +212,10 @@ pub fn PostView(
                                     on:click=move |_| {
                                         delete_self_action.dispatch(());
                                     }>
+                                    <span class="material-symbols-outlined">
                                     "delete"
+                                    </span>
+                                    <p>"delete"</p>
                                 </button>
                             </>
                         }
@@ -206,24 +227,32 @@ pub fn PostView(
                     view! {cx, <></>}
                 }}
                 </div>
+                </div>
                 <div class="post-controls">
                     <button
                         disabled=move || token.get().is_none() || wait_for_reload.get()
                         on:click=move |_| impression_action.dispatch((true, self_post.get().liked.unwrap()))>
-                        <i class=move || if self_post.get().liked.unwrap_or(false) {"material-icons selected positive"} else {"material-icons"}>"thumb_up"</i>
+                        <span class=move || if self_post.get().liked.unwrap_or(false) {"material-symbols-outlined selected positive"} else {"material-symbols-outlined"}>"thumb_up"</span>
                         <p>{move|| self_post.get().likes}</p>
                     </button>
                     <button
                         disabled=move || token.get().is_none() || wait_for_reload.get()
                         on:click=move |_| impression_action.dispatch((false, self_post.get().disliked.unwrap()))>
-                        <i class=move || if self_post.get().disliked.unwrap_or(false) {"material-icons selected negative"} else {"material-icons"}>"thumb_down"</i>
+                        <span class=move || if self_post.get().disliked.unwrap_or(false) {"material-symbols-outlined selected negative"} else {"material-symbols-outlined"}>"thumb_down"</span>
                         <p>{move|| self_post.get().dislikes}</p>
                     </button>
                     <button
                         on:click=move |_| new_post_overlay.set(Some(Some(self_post.get())))>
+                        <span class="material-symbols-outlined">
+                        "add_comment"
+                        </span>
                         <p>"respond"</p>
                     </button>
                 </div>
+                {move || loading_error.get().map(|err| view!{ cx,
+                    <p style ="color:red;" >{ err }</p>
+                  })
+                }
             </div>
             <div class="post-children">
                 <For
@@ -235,10 +264,6 @@ pub fn PostView(
                         }
                     }
                 />
-                {move || loading_error.get().map(|err| view!{ cx,
-                    <p style ="color:red;" >{ err }</p>
-                  })
-                }
                 {move || if wait_for_response.get() {
                     view!{ cx,
                         <div>
@@ -252,7 +277,10 @@ pub fn PostView(
                                 class="load-responses-button"
                                 disabled=move|| wait_for_response.get()
                                 on:click=move|_| load_children_action.dispatch(())>
-                                "Load responses (" {self_post.get().responses} ")"
+                                <span class="material-symbols-outlined">
+                                "forum"
+                                </span>
+                                <p>"responses (" {self_post.get().responses} ")"</p>
                             </button>
                         </div>
                     }

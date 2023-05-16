@@ -17,6 +17,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     let (token, set_token) = create_signal(cx, None::<ApiToken>);
     let (user_info, set_user_info) = create_signal(cx, None::<types::UserInfo>);
+    let darkmode = create_rw_signal(cx, true);
     let logged_in = Signal::derive(cx, move || token.get().is_some());
 
     // -- actions -- //
@@ -68,55 +69,57 @@ pub fn App(cx: Scope) -> impl IntoView {
     });
 
     view! { cx,
-      <Router>
-        <NavBar logged_in on_logout />
-        <main>
-          <Routes>
-            <Route
-              path=Page::Home.path()
-              view=move |cx| view! { cx,
-                <Home user_info = user_info.into() />
-              }
-            />
-            <Route
-              path=Page::Login.path()
-              view=move |cx| view! { cx,
-                <Login
-                    on_success = move |t| {
-                        log::info!("Successfully logged in");
-                        set_token.update(|v| *v = Some(t));
-                        let navigate = use_navigate(cx);
-                        navigate(Page::Home.path(), Default::default()).expect("Home route");
-                        fetch_user_info.dispatch(());
-                } />
-              }
-            />
-            <Route
-              path=Page::Register.path()
-              view=move |cx| view! { cx,
-                <Register
-                    on_success = move |t| {
-                        log::info!("Successfully registered and logged in");
-                        set_token.update(|v| *v = Some(t));
-                        let navigate = use_navigate(cx);
-                        navigate(Page::Home.path(), Default::default()).expect("Home route");
-                        fetch_user_info.dispatch(());
-                } />
-              }
-            />
-            <Route
-              path=Page::Posts.path()
-              view=move |cx| view! { cx,
-                <Posts user=user_info token=token/>
-            }/>
-            <Route
-            path=Page::NotFound.path()
-            view=move |cx| view! { cx,
-                <h2>"404 - Page not found"</h2>
+      <div id="control-root" class=move || if darkmode.get() {"dark"} else {"light"}>
+        <Router>
+          <NavBar logged_in on_logout darkmode/>
+          <main>
+            <Routes>
+              <Route
+                path=Page::Home.path()
+                view=move |cx| view! { cx,
+                  <Home user_info = user_info.into() />
                 }
-            />
-          </Routes>
-        </main>
-      </Router>
+              />
+              <Route
+                path=Page::Login.path()
+                view=move |cx| view! { cx,
+                  <Login
+                      on_success = move |t| {
+                          log::info!("Successfully logged in");
+                          set_token.update(|v| *v = Some(t));
+                          let navigate = use_navigate(cx);
+                          navigate(Page::Home.path(), Default::default()).expect("Home route");
+                          fetch_user_info.dispatch(());
+                  } />
+                }
+              />
+              <Route
+                path=Page::Register.path()
+                view=move |cx| view! { cx,
+                  <Register
+                      on_success = move |t| {
+                          log::info!("Successfully registered and logged in");
+                          set_token.update(|v| *v = Some(t));
+                          let navigate = use_navigate(cx);
+                          navigate(Page::Home.path(), Default::default()).expect("Home route");
+                          fetch_user_info.dispatch(());
+                  } />
+                }
+              />
+              <Route
+                path=Page::Posts.path()
+                view=move |cx| view! { cx,
+                  <Posts user=user_info token=token/>
+              }/>
+              <Route
+              path=Page::NotFound.path()
+              view=move |cx| view! { cx,
+                  <h2>"404 - Page not found"</h2>
+                  }
+              />
+            </Routes>
+          </main>
+        </Router>
+      </div>
     }
 }

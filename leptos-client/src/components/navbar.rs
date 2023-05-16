@@ -4,7 +4,12 @@ use leptos_router::*;
 use crate::Page;
 
 #[component]
-pub fn NavBar<F>(cx: Scope, logged_in: Signal<bool>, on_logout: F) -> impl IntoView
+pub fn NavBar<F>(
+    cx: Scope,
+    logged_in: Signal<bool>,
+    on_logout: F,
+    darkmode: RwSignal<bool>,
+) -> impl IntoView
 where
     F: Fn() + 'static + Clone,
 {
@@ -25,6 +30,16 @@ where
         </Show>
         " | "
         <A href=Page::Posts.path() >"Posts"</A>
+        " | "
+        <div class="toggle-switch">
+          <label class="darkmode-switch">
+            <input type="checkbox" checked=darkmode.get() on:change={
+              let darkmode = darkmode.clone();
+              move |e| darkmode.set(event_target_checked(&e))
+            }/>
+            <span class="slider"></span>
+          </label>
+        </div>
       </nav>
     }
 }

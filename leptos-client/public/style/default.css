@@ -1,5 +1,112 @@
+#root {
+  margin: 0;
+  min-height: 100vh;
+  --bg-color: #eee;
+  --bg-color-soft: #ccc;
+  --font-color: #111;
+}
+
+#root #control-root {
+  padding: 1.5vh;
+  min-height: 97vh;
+  font-family: 'Roboto';
+}
+
 .dark {
-  background-color: #111;
-  color: #eee;
+  --bg-color: #111;
+  --bg-color-soft: #333;
+  --font-color: #eee;
+  background-color: var(--bg-color);
+  color: var(--font-color);
+}
+
+nav {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  justify-items: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+nav * {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
+button {
+  background: none;
+  color: var(--font-color);
+  cursor: pointer;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  border-radius: 0.25rem;
+  border: 0.1rem dotted var(--font-color);
+  margin-right: 1rem;
+}
+
+button * {
+  margin: 0;
+}
+
+.toggle-switch {
+  width: 2rem;
+  height: 1rem;
+  position: relative;
+}
+
+.toggle-switch .darkmode-switch {
+  background-color: var(--bg-color);
+  -webkit-box-shadow: 0 0 0.25rem var(--font-color);
+          box-shadow: 0 0 0.25rem var(--font-color);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  border-radius: 15rem;
+}
+
+.toggle-switch .darkmode-switch input {
+  display: none;
+}
+
+.toggle-switch .darkmode-switch .slider {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50px;
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
+  margin: 0;
+}
+
+.toggle-switch .darkmode-switch input:checked ~ .slider {
+  background-color: var(--bg-color);
+}
+
+.toggle-switch .darkmode-switch .slider::before {
+  content: "";
+  position: absolute;
+  top: 0.1rem;
+  left: 0.1rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background-color: var(--font-color);
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.toggle-switch .darkmode-switch input:checked ~ .slider::before {
+  -webkit-transform: translateX(1rem);
+          transform: translateX(1rem);
 }
 /*# sourceMappingURL=default.css.map */

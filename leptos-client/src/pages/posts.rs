@@ -61,7 +61,7 @@ pub fn Posts(
             view!{cx, <> </>}
         }
         }
-        <div>
+        <div class="post-list">
             <For
                 each=move|| posts.get()
                 key=|post| post.id.clone()

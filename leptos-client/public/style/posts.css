@@ -1,42 +1,116 @@
-.tl-post {
-  border-radius: 1rem;
-  padding: 2rem;
+.post-list {
+  overflow-y: scroll;
+  max-height: 75vh;
   margin: 1rem;
 }
 
-.tl-post:nth-child(4n) {
+.post-list .tl-post {
+  border-radius: 1rem;
+  padding: 2rem;
+  margin: 1rem;
+  margin-bottom: 0;
+}
+
+.post-list .tl-post:nth-child(4n) {
   -webkit-box-shadow: 0 0 2rem rgba(255, 0, 0, 0.1);
           box-shadow: 0 0 2rem rgba(255, 0, 0, 0.1);
   background-color: rgba(255, 0, 0, 0.1);
   border: 1px dashed rgba(255, 0, 0, 0.3);
 }
 
-.tl-post:nth-child(4n + 1) {
+.post-list .tl-post:nth-child(4n + 1) {
   -webkit-box-shadow: 0 0 2rem rgba(255, 255, 0, 0.1);
           box-shadow: 0 0 2rem rgba(255, 255, 0, 0.1);
   background-color: rgba(255, 255, 0, 0.1);
   border: 1px dashed rgba(255, 255, 0, 0.3);
 }
 
-.tl-post:nth-child(4n + 2) {
+.post-list .tl-post:nth-child(4n + 2) {
   -webkit-box-shadow: 0 0 2rem rgba(0, 255, 0, 0.1);
           box-shadow: 0 0 2rem rgba(0, 255, 0, 0.1);
   background-color: rgba(0, 255, 0, 0.1);
   border: 1px dashed rgba(0, 255, 0, 0.3);
 }
 
-.tl-post:nth-child(4n + 3) {
+.post-list .tl-post:nth-child(4n + 3) {
   -webkit-box-shadow: 0 0 2rem rgba(0, 0, 255, 0.1);
           box-shadow: 0 0 2rem rgba(0, 0, 255, 0.1);
   background-color: rgba(0, 0, 255, 0.1);
   border: 1px dashed rgba(0, 0, 255, 0.3);
 }
 
-.post-content .selected.positive {
+.post-list div:not(.tl-post) > .post:nth-child(n+2) {
+  margin-top: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dotted var(--font-color);
+}
+
+.post-header {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.post-header p {
+  margin: 0;
+}
+
+.post-header .author,
+.post-header .date {
+  font-style: italic;
+}
+
+.post-header .reload-button {
+  background: none;
+  color: var(--font-color);
+  cursor: pointer;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  border-radius: 0.25rem;
+  border: 0.1rem dotted var(--font-color);
+}
+
+.post-body p {
+  margin-left: 1rem;
+}
+
+.post-body .reactions {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+.post-body .reactions p {
+  margin: 0;
+}
+
+.post-controls {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  margin: 1rem;
+  margin-left: 0;
+}
+
+.post-controls .selected.positive {
   color: green;
 }
 
-.post-content .selected.negative {
+.post-controls .selected.negative {
   color: orangered;
 }
 
@@ -44,5 +118,64 @@
   margin-left: 1%;
   padding-left: 1%;
   border-left: 1px solid;
+  margin-bottom: 1rem;
+}
+
+.new-post-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backdrop-filter: blur(2px);
+          backdrop-filter: blur(2px);
+}
+
+.new-post-background .new-post-window {
+  background-color: var(--bg-color);
+  -webkit-box-shadow: 0 0 2rem var(--bg-color-soft);
+          box-shadow: 0 0 2rem var(--bg-color-soft);
+  border-radius: 1rem;
+  padding: 2rem;
+  position: relative;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: 27rem;
+  height: -webkit-fit-content;
+  height: -moz-fit-content;
+  height: fit-content;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.new-post-background .new-post-window .new-post-close-button {
+  background-color: var(--bg-color);
+  color: var(--font-color);
+  border: none;
+  padding: 0;
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+}
+
+.new-post-background .new-post-window #new-post-textarea {
+  resize: none;
+  border: none;
+  padding: 0.25rem;
+  width: 25rem;
+  height: 10rem;
 }
 /*# sourceMappingURL=posts.css.map */
