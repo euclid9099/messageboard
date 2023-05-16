@@ -54,9 +54,6 @@ const getPosts = async ({
 	response: Response;
 }) => {
 	await responseSkeleton(response, async () => {
-		//sleep for 1 second
-		await new Promise((resolve) => setTimeout(resolve, 1000));
-
 		const fields = new Array(...post_fields);
 		if (request.url.searchParams.has("as")) {
 			fields.push("$user INSIDE <-likes<-user AS liked");
@@ -117,11 +114,13 @@ const editPost = async ({
 		}
 
 		const db = new Surreal(`${db_url}/rpc`, jwt);
-		//TODO rewrite to fetch author
+		const fields = [
+			"$auth INSIDE <-likes<-user AS liked",
+			"$auth INSIDE <-dislikes<-user AS disliked",
+		];
+		fields.push(...post_fields);
 		const result = await db.query(
-			`SELECT ${post_fields.join(
-				","
-			)} FROM (UPDATE $id SET message = $message RETURN id) FETCH author`,
+			`SELECT ${fields.join(",")} FROM (UPDATE $id SET message = $message RETURN id) FETCH author`,
 			{
 				id: params.id,
 				message: body.message,
