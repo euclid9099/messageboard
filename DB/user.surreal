@@ -21,6 +21,14 @@ DEFINE FIELD username ON user TYPE string
   ASSERT $value != NONE
   PERMISSIONS
     FOR update WHERE id = $auth.id;
+DEFINE FIELD about ON user TYPE string
+  ASSERT string::length($value) <= 250
+  PERMISSIONS
+    FOR update WHERE id = $auth.id;
+DEFINE FIELD profile_picture ON user TYPE string
+  ASSERT $value = /^https?:\/\/.*(\.png|\.jpg|\.gif|\.webp)$/
+  PERMISSIONS
+    FOR update WHERE id = $auth.id;
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
 
 DEFINE SCOPE global

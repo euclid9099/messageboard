@@ -34,7 +34,31 @@ const getUsers = async ({ response }: { response: Response }) => {
 const getUser = async ({ params, response }: { params: { id: string }; response: Response }) => {
 	await responseSkeleton(response, async () => {
 		return await Surreal.Instance.query(
-			"SELECT *, ->follows->user.id AS follows, <-follows<-user.id AS followers FROM user WHERE id = $request_id",
+			"SELECT *, count(->follows->user.id) AS follows, count(<-follows<-user.id) AS followers FROM user WHERE id = $request_id",
+			{
+				request_id: params.id,
+			}
+		);
+	});
+};
+
+const getUserFollowers = async ({ params, request, response }: { params: { id: string }; request: Request; response: Response }) => {
+	await responseSkeleton(response, async () => {		
+		const offset = parseInt(request.url.searchParams.get("offset") || "0") || 0;
+		return await Surreal.Instance.query(
+			`SELECT ->follows->user.id AS follows FROM user WHERE (id=$request_id) LIMIT 15 START ${offset} FETCH follows`,
+			{
+				request_id: params.id,
+			}
+		);
+	});
+};
+
+const getUserFollowing = async ({ params, request, response }: { params: { id: string }; request: Request; response: Response }) => {
+	await responseSkeleton(response, async () => {		
+		const offset = parseInt(request.url.searchParams.get("offset") || "0") || 0;
+		return await Surreal.Instance.query(
+			`SELECT <-follows<-user.id AS follows FROM user WHERE (id=$request_id) LIMIT 15 START ${offset} FETCH follows`,
 			{
 				request_id: params.id,
 			}
@@ -53,7 +77,7 @@ const editUser = async ({
 }) => {
 	await responseSkeleton(response, async () => {
 		//needs to check if token exists and matches the user we want to edit
-		const jwt = checkToken({ params, request, ignoreIdMistmatch: true });
+		const jwt = checkToken({ params, request, ignoreIdMistmatch: false });
 
 		//only oneself can update so we need to authenticate and invalidate afterwards
 		const db = new Surreal(`${db_url}/rpc`, jwt);
@@ -117,4 +141,4 @@ const unfollowUser = async ({
 	});
 };
 
-export { getUsers, getUser, editUser, followUser, unfollowUser };
+export { getUsers, getUser, editUser, followUser, unfollowUser, getUserFollowers, getUserFollowing };
