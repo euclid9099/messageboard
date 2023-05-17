@@ -1,3 +1,8 @@
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
+
 use gloo_storage::{LocalStorage, Storage};
 use leptos::*;
 use leptos_router::*;
@@ -51,20 +56,56 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     // -- init API -- //
 
-    if let Ok(token_storage) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
-        set_token.set(Some(token_storage));
+    if let Ok(token_storage) = LocalStorage::get::<ApiToken>(API_TOKEN_STORAGE_KEY) {
+        log::debug!("{:?}", token_storage);
+        if token_storage.exp() > chrono::Utc::now().timestamp() {
+            set_token.set(Some(token_storage));
+        }
     }
 
+    let token_invalidation_handle = Arc::new(Mutex::new(None));
     // -- effects -- //
-
     create_effect(cx, move |_| match token.get() {
         Some(token) => {
+            let dur = Duration::from_secs(
+                (token.exp() - chrono::Utc::now().timestamp())
+                    .try_into()
+                    .unwrap(),
+            );
+            log::debug!("Token ({:?}) expires in {:?}", token, dur);
             LocalStorage::set(API_TOKEN_STORAGE_KEY, token).expect("LocalStorage::set");
             fetch_user_info.dispatch(());
+            if let Ok(handle) = set_timeout_with_handle(
+                move || {
+                    set_token.set(None);
+                    let _ = window().alert_with_message("Your login was invalidated");
+                },
+                dur,
+            ) {
+                match token_invalidation_handle.lock() {
+                    Ok(mut handle_lock) => {
+                        *handle_lock = Some(handle);
+                    }
+                    Err(err) => {
+                        log::error!("Unable to lock token_invalidation_handle: {err}");
+                    }
+                }
+            };
         }
         None => {
             LocalStorage::delete(API_TOKEN_STORAGE_KEY);
             set_user_info.set(None);
+            match token_invalidation_handle.lock() {
+                Ok(mut handle) => {
+                    if handle.is_some() {
+                        handle.unwrap().clear();
+                        handle.take();
+                    }
+                }
+                Err(err) => {
+                    log::error!("Unable to lock token_invalidation_handle: {err}");
+                }
+            }
         }
     });
 

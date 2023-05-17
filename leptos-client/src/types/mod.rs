@@ -33,7 +33,7 @@ pub struct Post {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ApiToken {
     pub token: String,
-    id: String,
+    payload: Value,
 }
 
 impl ApiToken {
@@ -46,18 +46,19 @@ impl ApiToken {
         .expect("token is not valid base64 encoding");
         ApiToken {
             token,
-            id: serde_json::from_str::<Value>(
+            payload: serde_json::from_str::<Value>(
                 &String::from_utf8(payload).expect("token payload is not valid utf8"),
             )
-            .unwrap()["ID"]
-                .as_str()
-                .unwrap()
-                .to_string(),
+            .unwrap(),
         }
     }
 
     pub fn id(&self) -> &str {
-        &self.id
+        self.payload["ID"].as_str().unwrap()
+    }
+
+    pub fn exp(&self) -> i64 {
+        self.payload["exp"].as_i64().unwrap_or(0)
     }
 }
 

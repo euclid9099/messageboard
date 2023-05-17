@@ -24,8 +24,8 @@ DEFINE FIELD username ON user TYPE string
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
 
 DEFINE SCOPE global
-  -- the JWT session will be valid for 1 day
-  SESSION 4h
+  -- the JWT session will be valid for whatever time specified
+  SESSION 2h
   -- The optional SIGNUP clause will be run when calling the signup method for this scope
   -- It is designed to create or add a new record to the database.
   -- If set, it needs to return a record or a record id
