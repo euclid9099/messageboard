@@ -3,7 +3,7 @@ use leptos::*;
 use leptos_router::*;
 
 #[component]
-pub fn Home(cx: Scope, user_info: Signal<Option<UserInfo>>) -> impl IntoView {
+pub fn Home(cx: Scope, user_info: ReadSignal<Option<UserInfo>>) -> impl IntoView {
     view! { cx,
       <h2>"Welcome to "</h2>
       {move || match user_info.get() {
@@ -12,7 +12,7 @@ pub fn Home(cx: Scope, user_info: Signal<Option<UserInfo>>) -> impl IntoView {
         }.into_view(cx),
         None => view!{ cx,
           <p>"You are not logged in."</p>
-          <A href=Page::Login.path() >"Login now."</A>
+          <A href=Page::Login.path(None) >"Login now."</A>
         }.into_view(cx)
       }}
     }

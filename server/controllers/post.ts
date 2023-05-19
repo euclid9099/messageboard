@@ -65,6 +65,7 @@ const getPosts = async ({
 		if (params?.id) conditions.push("id = $id");
 		if (request.url.searchParams.has("parent")) conditions.push("$parent INSIDE <-response<-post");
 		else if (!params?.id) conditions.push("count(<-response<-post) = 0");
+		if (request.url.searchParams.has("by")) conditions.push("author = $by");
 
 		return (
 			await Surreal.Instance.query(
@@ -75,6 +76,7 @@ const getPosts = async ({
 					parent: request.url.searchParams.get("parent") ?? "",
 					after: request.url.searchParams.get("after") ?? "",
 					user: request.url.searchParams.get("as") ?? "",
+					by: request.url.searchParams.get("by") ?? "",
 					id: params?.id ?? "",
 				}
 			)

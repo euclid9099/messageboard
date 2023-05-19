@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use base64::{engine::general_purpose, Engine};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -9,11 +11,40 @@ pub struct Credentials {
     pub password: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+pub struct FollowerReply {
+    pub followers: Vec<UserInfo>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct FollowingReply {
+    pub following: Vec<UserInfo>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct UserInfo {
     pub id: String,
     pub username: Option<String>,
+    #[serde(default)]
     pub admin: bool,
+    pub about: Option<String>,
+    pub profile_picture: Option<String>,
+    pub followers: Option<u32>,
+    pub following: Option<u32>,
+    #[serde(default)]
+    pub you_follow: bool,
+}
+
+impl Ord for UserInfo {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialOrd for UserInfo {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

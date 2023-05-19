@@ -55,6 +55,6 @@ where
         disabled
       />
       <p>"Don't have an account?"</p>
-      <A href=Page::Register.path()>"Register"</A>
+      <A href=Page::Register.path(None)>"Register"</A>
     }
 }

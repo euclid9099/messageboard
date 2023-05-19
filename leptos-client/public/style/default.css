@@ -4,6 +4,8 @@
   --bg-color: #eee;
   --bg-color-soft: #ccc;
   --font-color: #111;
+  --admin-color: #FFD700;
+  --friend-color: cyan;
 }
 
 #root #control-root {

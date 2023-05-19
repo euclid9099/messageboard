@@ -26,7 +26,7 @@ DEFINE FIELD about ON user TYPE string
   PERMISSIONS
     FOR update WHERE id = $auth.id;
 DEFINE FIELD profile_picture ON user TYPE string
-  ASSERT $value = /^https?:\/\/.*(\.png|\.jpg|\.gif|\.webp)$/
+  ASSERT $value == none or $value = /^https?:\/\/.*(\.png|\.jpg|\.gif|\.webp)$/
   PERMISSIONS
     FOR update WHERE id = $auth.id;
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;

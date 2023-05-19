@@ -30,10 +30,13 @@ async fn authenticate(credentials: &Credentials, url: String) -> Result<ApiToken
     }
 }
 
-pub async fn load_user(user_id: Option<&str>) -> Result<UserInfo> {
+pub async fn load_user(user_id: Option<String>, as_user: Option<String>) -> Result<UserInfo> {
     let mut url = format!("{}/users", DEFAULT_API_URL,);
     if let Some(user_id) = user_id {
         url.push_str(&format!("/{}", user_id));
+        if let Some(user_id) = as_user {
+            url.push_str(&format!("?as={}", user_id));
+        }
     }
 
     let user_reply: types::Reply<Vec<DBReply<Vec<UserInfo>>>> =
@@ -57,6 +60,103 @@ pub async fn load_user(user_id: Option<&str>) -> Result<UserInfo> {
             })))
         }
     }
+}
+
+pub async fn load_followers(user_id: String, offset: Option<usize>) -> Result<Vec<UserInfo>> {
+    let offset = match offset {
+        Some(offset) => offset,
+        None => 0,
+    };
+    let url = format!(
+        "{}/users/{}/followers?offset={}",
+        DEFAULT_API_URL, user_id, offset
+    );
+    log::debug!("url: {}", url);
+
+    let res = Request::get(&url).send().await?;
+
+    let user_reply: Reply<Vec<DBReply<Vec<FollowerReply>>>> = into_json(res).await?;
+
+    match user_reply.content {
+        Some(user_in_db) => match user_in_db.get(0).unwrap() {
+            DBReply::OK { time: _, result } => Ok(result.get(0).unwrap().followers.to_owned()),
+            DBReply::ERR { time: _, detail } => {
+                return Err(Error::Api(types::Error {
+                    message: detail.to_owned(),
+                }))
+            }
+        },
+        None => {
+            return Err(Error::Api(user_reply.error.unwrap_or(types::Error {
+                message: "could not receive followers".to_string(),
+            })))
+        }
+    }
+}
+
+pub async fn load_following(user_id: String, offset: Option<usize>) -> Result<Vec<UserInfo>> {
+    let offset = match offset {
+        Some(offset) => offset,
+        None => 0,
+    };
+    let url = format!(
+        "{}/users/{}/following?offset={}",
+        DEFAULT_API_URL, user_id, offset
+    );
+    log::debug!("url: {}", url);
+
+    let res = Request::get(&url).send().await?;
+
+    let user_reply: Reply<Vec<DBReply<Vec<FollowingReply>>>> = into_json(res).await?;
+
+    match user_reply.content {
+        Some(user_in_db) => match user_in_db.get(0) {
+            Some(reply) => match reply {
+                DBReply::OK { time: _, result } => Ok(result.get(0).unwrap().following.to_owned()),
+                DBReply::ERR { time: _, detail } => {
+                    return Err(Error::Api(types::Error {
+                        message: detail.to_owned(),
+                    }))
+                }
+            },
+            None => {
+                return Err(Error::Api(types::Error {
+                    message: "no new followers".to_string(),
+                }))
+            }
+        },
+        None => {
+            return Err(Error::Api(user_reply.error.unwrap_or(types::Error {
+                message: "could not receive followers".to_string(),
+            })))
+        }
+    }
+}
+
+pub async fn follow_user(user_id: String, token: ApiToken) -> Result<Reply<Vec<DBReply<Value>>>> {
+    let url = format!("{}/users/{}/follow", DEFAULT_API_URL, user_id);
+    log::debug!("url: {}", url);
+
+    into_json(
+        Request::post(&url)
+            .header("x-token", &token.token)
+            .send()
+            .await?,
+    )
+    .await
+}
+
+pub async fn unfollow_user(user_id: String, token: ApiToken) -> Result<Reply<Vec<DBReply<Value>>>> {
+    let url = format!("{}/users/{}/unfollow", DEFAULT_API_URL, user_id);
+    log::debug!("url: {}", url);
+
+    into_json(
+        Request::post(&url)
+            .header("x-token", &token.token)
+            .send()
+            .await?,
+    )
+    .await
 }
 
 pub async fn load_post(

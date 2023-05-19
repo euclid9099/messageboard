@@ -55,6 +55,6 @@ where
         disabled
       />
       <p>"Already have an account?"</p>
-      <A href=Page::Login.path()>"Login"</A>
+      <A href=Page::Login.path(None)>"Login"</A>
     }
 }

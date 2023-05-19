@@ -1,0 +1,109 @@
+.user_info {
+  margin-left: 15%;
+  margin-right: 15%;
+  margin-bottom: 3rem;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  border-bottom: 1px solid var(--font-color);
+}
+
+.user_info h3 {
+  margin-bottom: 0;
+}
+
+.user_info img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-top: 20px;
+  border: 2px solid var(--font-color);
+}
+
+.user_info button {
+  margin-right: 0;
+}
+
+.user_info.admin_user img {
+  border: 2px solid var(--admin-color);
+  -webkit-box-shadow: 0 0 1rem var(--admin-color);
+          box-shadow: 0 0 1rem var(--admin-color);
+}
+
+.user_info.admin_user h3 {
+  -webkit-text-decoration-line: underline;
+          text-decoration-line: underline;
+  -webkit-text-decoration-color: var(--admin-color);
+          text-decoration-color: var(--admin-color);
+  position: relative;
+}
+
+.user_followers > p, .user_following > p {
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.user_followers ul, .user_following ul {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  border-radius: 0.25rem;
+  border-top: 0.1rem solid var(--font-color);
+  border-bottom: 0.1rem solid var(--font-color);
+  margin-right: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.user_followers ul > *, .user_following ul > * {
+  margin: 0.75rem;
+  padding: 0.25rem;
+  height: 2rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--font-color);
+}
+
+.user_followers ul .user_badge, .user_following ul .user_badge {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.user_followers ul .user_badge img, .user_following ul .user_badge img {
+  height: 100%;
+  aspect-ratio: 1;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+}
+
+.user_followers ul .user_badge p, .user_following ul .user_badge p {
+  margin: 0;
+  height: -webkit-min-content;
+  height: -moz-min-content;
+  height: min-content;
+}
+
+.user_followers ul .user_badge.friends, .user_following ul .user_badge.friends {
+  border: 1px solid var(--friend-color);
+}
+/*# sourceMappingURL=user.css.map */

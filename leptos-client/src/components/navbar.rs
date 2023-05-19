@@ -1,12 +1,12 @@
 use leptos::*;
 use leptos_router::*;
 
-use crate::Page;
+use crate::{types::UserInfo, Page};
 
 #[component]
 pub fn NavBar<F>(
     cx: Scope,
-    logged_in: Signal<bool>,
+    logged_in: ReadSignal<Option<UserInfo>>,
     on_logout: F,
     darkmode: RwSignal<bool>,
 ) -> impl IntoView
@@ -16,11 +16,11 @@ where
     view! { cx,
       <nav>
         <Show
-          when = move || logged_in.get()
+          when = move || logged_in.get().is_some()
           fallback = |cx| view! { cx,
-            <A href=Page::Login.path() >"Login"</A>
+            <A href=Page::Login.path(None) >"Login"</A>
             " | "
-            <A href=Page::Register.path() >"Register"</A>
+            <A href=Page::Register.path(None) >"Register"</A>
           }
         >
           <a href="#" on:click={
@@ -29,7 +29,7 @@ where
           }>"Logout"</a>
         </Show>
         " | "
-        <A href=Page::Posts.path() >"Posts"</A>
+        <A href=Page::Posts.path(None) >"Posts"</A>
         " | "
         <div class="toggle-switch">
           <label class="darkmode-switch">
@@ -40,6 +40,12 @@ where
             <span class="slider"></span>
           </label>
         </div>
+        <Show
+            when = move || logged_in.get().is_some()
+            fallback = |cx| view!{cx, <></>}
+          >
+          <A href=Page::User.path(Some(logged_in.get().unwrap().id)) >"self"</A>
+        </Show>
       </nav>
     }
 }

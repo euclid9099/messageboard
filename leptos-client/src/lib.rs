@@ -29,7 +29,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     let fetch_user_info = create_action(cx, move |_| async move {
         match token.get() {
-            Some(token) => match api::load_user(Some(token.id())).await {
+            Some(token) => match api::load_user(Some(token.id().to_string()), None).await {
                 Ok(info) => {
                     set_user_info.set(Some(info));
                 }
@@ -112,48 +112,53 @@ pub fn App(cx: Scope) -> impl IntoView {
     view! { cx,
       <div id="control-root" class=move || if darkmode.get() {"dark"} else {"light"}>
         <Router>
-          <NavBar logged_in on_logout darkmode/>
+          <NavBar logged_in=user_info on_logout darkmode/>
           <main>
             <Routes>
               <Route
-                path=Page::Home.path()
+                path=Page::Home.path(None)
                 view=move |cx| view! { cx,
-                  <Home user_info = user_info.into() />
+                  <Home user_info = user_info />
                 }
               />
               <Route
-                path=Page::Login.path()
+                path=Page::Login.path(None)
                 view=move |cx| view! { cx,
                   <Login
                       on_success = move |t| {
                           log::info!("Successfully logged in");
                           set_token.update(|v| *v = Some(t));
                           let navigate = use_navigate(cx);
-                          navigate(Page::Home.path(), Default::default()).expect("Home route");
+                          navigate(&Page::Home.path(None), Default::default()).expect("Home route");
                           fetch_user_info.dispatch(());
                   } />
                 }
               />
               <Route
-                path=Page::Register.path()
+                path=Page::Register.path(None)
                 view=move |cx| view! { cx,
                   <Register
                       on_success = move |t| {
                           log::info!("Successfully registered and logged in");
                           set_token.update(|v| *v = Some(t));
                           let navigate = use_navigate(cx);
-                          navigate(Page::Home.path(), Default::default()).expect("Home route");
+                          navigate(&Page::Home.path(None), Default::default()).expect("Home route");
                           fetch_user_info.dispatch(());
                   } />
                 }
               />
               <Route
-                path=Page::Posts.path()
+                path=Page::Posts.path(None)
                 view=move |cx| view! { cx,
                   <Posts user=user_info token=token/>
               }/>
               <Route
-              path=Page::NotFound.path()
+                path=Page::User.path(None)
+                view=move |cx| view! { cx,
+                  <User self_info=user_info self_token=token/>
+              }/>
+              <Route
+              path=Page::NotFound.path(None)
               view=move |cx| view! { cx,
                   <h2>"404 - Page not found"</h2>
                   }
