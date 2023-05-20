@@ -4,7 +4,7 @@ use crate::{
     types::{ApiToken, Post, UserInfo},
 };
 use leptos::*;
-use leptos_router::{AProps, APropsBuilder, A};
+use leptos_router::{AProps, A};
 
 #[component]
 pub fn PostView(

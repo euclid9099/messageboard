@@ -1,12 +1,9 @@
-use std::collections::{BTreeSet, HashMap};
-
 use crate::{
     api,
-    components::postview::*,
     pages::Page,
-    types::{self, ApiToken, Post, UserInfo},
+    types::{self, ApiToken, UserInfo},
 };
-use leptos::{ev::KeyboardEvent, html::Textarea, *};
+use leptos::*;
 use leptos_router::*;
 
 #[component]

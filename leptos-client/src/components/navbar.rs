@@ -18,19 +18,26 @@ where
         <Show
           when = move || logged_in.get().is_some()
           fallback = |cx| view! { cx,
-            <A href=Page::Login.path(None) >"Login"</A>
+            <A href=Page::Login.path(None) >"login"</A>
             " | "
-            <A href=Page::Register.path(None) >"Register"</A>
+            <A href=Page::Register.path(None) >"register"</A>
           }
         >
           <a href="#" on:click={
             let on_logout = on_logout.clone();
             move |_| on_logout()
-          }>"Logout"</a>
+          }>"logout"</a>
         </Show>
         " | "
-        <A href=Page::Posts.path(None) >"Posts"</A>
+        <A href=Page::Posts.path(None) >"posts"</A>
         " | "
+        <Show
+            when = move || logged_in.get().is_some()
+            fallback = |_| view!{cx, <></>}
+          >
+          <A href=Page::User.path(Some(logged_in.get().unwrap().id)) >"self"</A>
+          " | "
+        </Show>
         <div class="toggle-switch">
           <label class="darkmode-switch">
             <input type="checkbox" checked=darkmode.get() on:change={
@@ -40,12 +47,6 @@ where
             <span class="slider"></span>
           </label>
         </div>
-        <Show
-            when = move || logged_in.get().is_some()
-            fallback = |cx| view!{cx, <></>}
-          >
-          <A href=Page::User.path(Some(logged_in.get().unwrap().id)) >"self"</A>
-        </Show>
       </nav>
     }
 }
