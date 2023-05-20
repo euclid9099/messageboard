@@ -75,6 +75,24 @@ pub async fn delete_user(user_id: String, token: ApiToken) -> Result<Reply<Value
     .await
 }
 
+pub async fn update_user(
+    user_id: String,
+    patch: UserInfo,
+    token: ApiToken,
+) -> Result<Reply<Value>> {
+    let url = format!("{}/users/{}", DEFAULT_API_URL, user_id);
+    log::debug!("url: {}", url);
+
+    into_json(
+        Request::patch(&url)
+            .header("x-token", &token.token)
+            .json(&patch)?
+            .send()
+            .await?,
+    )
+    .await
+}
+
 pub async fn load_followers(user_id: String, offset: Option<usize>) -> Result<Vec<UserInfo>> {
     let offset = match offset {
         Some(offset) => offset,

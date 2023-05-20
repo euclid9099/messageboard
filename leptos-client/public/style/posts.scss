@@ -47,6 +47,18 @@
     justify-content: space-between;
     align-items: center;
 
+    a {
+        display: flex;
+        align-items: center;
+
+        img {
+            height: 1.5rem;
+            width: 1.5rem;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+    }
+
     p {
         margin: 0;
     }

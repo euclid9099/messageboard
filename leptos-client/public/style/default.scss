@@ -54,6 +54,15 @@ button {
     }
 }
 
+p[contenteditable="true"] {
+    background-color: var(--bg-color-soft);
+    border: 0.1rem solid var(--font-color);
+}
+
+a {
+    color: var(--font-color);
+}
+
 .toggle-switch {
     width: 2rem;
     height: 1rem;

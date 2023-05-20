@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 use crate::{
     api,
@@ -6,7 +6,7 @@ use crate::{
     pages::Page,
     types::{self, ApiToken, Post, UserInfo},
 };
-use leptos::*;
+use leptos::{ev::KeyboardEvent, html::Textarea, *};
 use leptos_router::*;
 
 #[component]
@@ -18,6 +18,7 @@ pub fn User(
     let (user_info, set_user_info) = create_signal(cx, None::<types::UserInfo>);
     let (followers, set_followers) = create_signal(cx, Vec::<types::UserInfo>::new());
     let (following, set_following) = create_signal(cx, Vec::<types::UserInfo>::new());
+    let (update_user_dialog, set_update_user_dialog) = create_signal(cx, false);
     let params = use_params_map(cx);
 
     let user_id = move || params.with(|params| params.get("user").unwrap().clone());
@@ -61,6 +62,33 @@ pub fn User(
                 }
                 Err(err) => {
                     log::error!("Failed to load user info: {}", err);
+                }
+            }
+        }
+    });
+
+    let update_user = create_action(cx, move |()| {
+        let mut patch = user_info.get().unwrap();
+        patch.about = leptos_dom::document()
+            .get_element_by_id("new_about")
+            .unwrap()
+            .text_content();
+        patch.profile_picture = leptos_dom::document()
+            .get_element_by_id("new_image_link")
+            .unwrap()
+            .text_content();
+        log::debug!("{:?}", patch);
+        let req = api::update_user(user_id(), patch.clone(), self_token.get().unwrap());
+
+        async move {
+            let res = req.await;
+            match res {
+                Ok(res) => {
+                    log::debug!("user updated: {:?}", res);
+                    set_user_info.set(Some(patch));
+                }
+                Err(err) => {
+                    log::error!("Failed to update user: {}", err);
                 }
             }
         }
@@ -212,6 +240,33 @@ pub fn User(
                         view! {cx, <></>}
                     }}
                 </div>
+                {if self_info.get().is_some() && self_info.get().unwrap().id == user_id() {
+                    view! {cx, <>
+                        {if update_user_dialog.get() {
+                            view!{cx, <>
+                                <div>
+                                    <p id="new_about" contenteditable="true">{self_info.get().unwrap().about}</p>
+                                    <p id="new_image_link" contenteditable="true">{self_info.get().unwrap().profile_picture}</p>
+                                </div>
+                            </>}
+                        } else {
+                            view!{cx, <></>}
+                        }}
+                        <button
+                            on:click=move|_| {
+                                if update_user_dialog.get() {
+                                    update_user.dispatch(());
+                                    set_update_user_dialog.set(false);
+                                } else {
+                                    set_update_user_dialog.set(true);
+                                }}
+                        >
+                            <p>{if update_user_dialog.get() {"send update"} else {"change profile"}}</p>
+                        </button>
+                    </>}
+                } else {
+                    view! {cx, <></>}
+                }}
             </div>
             <div class="user_followers">
                 <p>"Followers:"</p>

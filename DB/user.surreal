@@ -9,7 +9,7 @@ DEFINE TABLE user SCHEMAFULL
     FOR delete WHERE $auth.admin OR id = $auth.id;
 --- define FIELD's
 DEFINE FIELD pass ON user TYPE string
-  VALUE crypto::argon2::generate($value)
+  VALUE IF string::startsWith($value, "$argon") THEN $value ELSE crypto::argon2::generate($value) END
   ASSERT $value != NONE
   PERMISSIONS
     FOR update WHERE id = $auth.id,
@@ -29,9 +29,10 @@ DEFINE FIELD profile_picture ON user TYPE string
   ASSERT $value == none or $value = /^https?:\/\/.*(\.png|\.jpg|\.gif|\.webp)$/
   PERMISSIONS
     FOR update WHERE id = $auth.id;
-DEFINE FIELD archived ON user TYPE bool
+DEFINE FIELD archived ON user TYPE bool -- weirdness with deleting, so I added an archived field and an event to delete the user
   VALUE (IF $value IS null THEN false ELSE $value END)
   PERMISSIONS
+    FOR select NONE,
     FOR update WHERE id = $auth.id OR $auth.admin;
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
 

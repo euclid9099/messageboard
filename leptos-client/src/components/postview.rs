@@ -142,7 +142,7 @@ pub fn PostView(
                 <div class="post-header">
                     {match post.author {
                         Some(u) => view!{cx,
-                            <><A href=Page::User.path(Some(u.id))>{u.username.unwrap_or("error loading username".to_string())}</A></>
+                            <><A href=Page::User.path(Some(u.id))><img src={u.profile_picture}/>{u.username.unwrap_or("error loading username".to_string())}</A></>
                         },
                         None => view!{cx, <><p>"anonymous"</p></>}
                     }}
