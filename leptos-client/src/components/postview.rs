@@ -1,8 +1,10 @@
 use crate::{
     api,
+    pages::Page,
     types::{ApiToken, Post, UserInfo},
 };
 use leptos::*;
+use leptos_router::{AProps, APropsBuilder, A};
 
 #[component]
 pub fn PostView(
@@ -138,10 +140,12 @@ pub fn PostView(
         <div class="post">
             <div class="post-content">
                 <div class="post-header">
-                    <p class="author">{match post.author {
-                        Some(u) => u.username.unwrap_or("error loading username".to_string()),
-                        None => "anonymous".to_string()
-                    }}</p>
+                    {match post.author {
+                        Some(u) => view!{cx,
+                            <><A href=Page::User.path(Some(u.id))>{u.username.unwrap_or("error loading username".to_string())}</A></>
+                        },
+                        None => view!{cx, <><p>"anonymous"</p></>}
+                    }}
                     <button
                         class="reload-button"
                         disabled=move|| wait_for_reload.get()
