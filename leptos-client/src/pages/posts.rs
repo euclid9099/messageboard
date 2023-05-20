@@ -10,7 +10,7 @@ use crate::{
 pub fn Posts(
     cx: Scope,
     user: ReadSignal<Option<UserInfo>>,
-    token: ReadSignal<Option<ApiToken>>,
+    token: Signal<Option<ApiToken>>,
 ) -> impl IntoView {
     let (loading_error, set_loading_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);

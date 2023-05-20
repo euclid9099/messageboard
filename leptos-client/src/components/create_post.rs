@@ -8,7 +8,7 @@ use crate::{
 #[component]
 pub fn CreatePost<F>(
     cx: Scope,
-    token: ReadSignal<Option<ApiToken>>,
+    token: Signal<Option<ApiToken>>,
     parent: Option<Post>,
     on_close: F,
 ) -> impl IntoView

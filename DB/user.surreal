@@ -29,7 +29,15 @@ DEFINE FIELD profile_picture ON user TYPE string
   ASSERT $value == none or $value = /^https?:\/\/.*(\.png|\.jpg|\.gif|\.webp)$/
   PERMISSIONS
     FOR update WHERE id = $auth.id;
+DEFINE FIELD archived ON user TYPE bool
+  VALUE (IF $value IS null THEN false ELSE $value END)
+  PERMISSIONS
+    FOR update WHERE id = $auth.id OR $auth.admin;
 DEFINE INDEX username_idx ON user FIELDS username UNIQUE;
+
+DEFINE EVENT user_deleted ON TABLE user WHEN $event = "UPDATE" AND $after.archived THEN (
+  DELETE $before.id
+);
 
 DEFINE SCOPE global
   -- the JWT session will be valid for whatever time specified
@@ -43,5 +51,5 @@ DEFINE SCOPE global
   -- It is designed to check if a record exists in the database.
   -- If set, it needs to return a record or a record id
   -- The variables can be passed in to the signin method
-  SIGNIN ( SELECT * FROM user WHERE username = $username AND crypto::argon2::compare(pass, $pass) )
+  SIGNIN ( SELECT * FROM user WHERE username = $username AND crypto::argon2::compare(pass, $pass) AND archived = false );
   -- this optional clause will be run when calling the signup method for this scope

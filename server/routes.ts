@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { login, signup } from "./controllers/security.ts";
-import { getUsers, getUser, editUser, followUser, unfollowUser, getUserFollowers, getUserFollowing } from "./controllers/user.ts";
+import { getUsers, getUser, editUser, followUser, unfollowUser, getUserFollowers, getUserFollowing, deleteUser } from "./controllers/user.ts";
 import {
 	createPost,
 	getPosts,
@@ -29,9 +29,10 @@ router.post("/signup", signup); //sign up with username and password
 //user
 router.get("/users", getUsers); //get all users ordered by connections
 router.get("/users/:id", getUser); //get one user
+router.patch("/users/:id", editUser); //update one user data (only as self)
+router.delete("/users/:id", deleteUser); //update one user data (only as self)
 router.get("/users/:id/followers", getUserFollowers); //get followers
 router.get("/users/:id/following", getUserFollowing); //get following
-router.patch("/users/:id", editUser); //update one user data (only as self)
 router.post("/users/:id/follow", followUser); //add a person of interest
 router.post("/users/:id/unfollow", unfollowUser); //add a person of interest
 

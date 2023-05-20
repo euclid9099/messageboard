@@ -9,7 +9,7 @@ pub fn PostView(
     cx: Scope,
     as_user: ReadSignal<Option<UserInfo>>,
     post: Post,
-    token: ReadSignal<Option<ApiToken>>,
+    token: Signal<Option<ApiToken>>,
     new_post_overlay: WriteSignal<Option<Option<Post>>>,
     sibling_list: WriteSignal<Vec<Post>>,
 ) -> impl IntoView {

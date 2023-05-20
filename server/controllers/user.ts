@@ -16,8 +16,7 @@ const checkToken = ({
 	if (!jwt) {
 		throw new Error('"X-Token" missing in header');
 	}
-	const json = decode_jwt(jwt);
-	if (!ignoreIdMistmatch && json.payload.ID != params.id) {
+	if (!ignoreIdMistmatch && decode_jwt(jwt).payload.ID != params.id) {
 		throw new Error("can only edit self");
 	}
 	return jwt;
@@ -89,6 +88,29 @@ const editUser = async ({
 	});
 };
 
+const deleteUser = async ({
+	params,
+	request,
+	response,
+}: {
+	params: { id: string };
+	request: Request;
+	response: Response;
+}) => {
+	await responseSkeleton(response, async () => {
+		//needs to check if token exists and matches the user we want to edit
+		const jwt = checkToken({ params, request, ignoreIdMistmatch: true });
+		console.log(params.id);
+
+		const db = new Surreal(`${db_url}/rpc`, jwt);
+		const result = await db.change(params.id, { archived: true });
+		db.close();
+		console.log(result);
+
+		return result;
+	});
+}
+
 const followUser = async ({
 	params,
 	request,
@@ -142,4 +164,4 @@ const unfollowUser = async ({
 	});
 };
 
-export { getUsers, getUser, editUser, followUser, unfollowUser, getUserFollowers, getUserFollowing };
+export { getUsers, getUser, editUser, deleteUser, followUser, unfollowUser, getUserFollowers, getUserFollowing };

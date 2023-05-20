@@ -13,7 +13,7 @@ use leptos_router::*;
 pub fn User(
     cx: Scope,
     self_info: ReadSignal<Option<UserInfo>>,
-    self_token: ReadSignal<Option<ApiToken>>,
+    self_token: RwSignal<Option<ApiToken>>,
 ) -> impl IntoView {
     let (user_info, set_user_info) = create_signal(cx, None::<types::UserInfo>);
     let (followers, set_followers) = create_signal(cx, Vec::<types::UserInfo>::new());
@@ -46,7 +46,6 @@ pub fn User(
         );
 
         async move {
-            log::debug!("test #1");
             if let Some(self_user) = self_info.get() {
                 if self_user.id == user_id() || user_id() == "self" {
                     log::debug!("user is self");
@@ -62,6 +61,38 @@ pub fn User(
                 }
                 Err(err) => {
                     log::error!("Failed to load user info: {}", err);
+                }
+            }
+        }
+    });
+
+    let delete_user = create_action(cx, move |()| {
+        let req = api::delete_user(user_id(), self_token.get().unwrap());
+        async move {
+            match window().confirm_with_message(
+                "are you sure you want to delete this account?\nTHIS ACTION IS IRREVERSIBLE!",
+            ) {
+                Ok(true) => {}
+                _ => {
+                    return;
+                }
+            };
+            let res = req.await;
+            match res {
+                Ok(res) => match res.error {
+                    Some(err) => {
+                        log::error!("Failed to delete user: {:?}", err);
+                    }
+                    None => {
+                        log::debug!("user deleted: {:?}", res);
+                        if self_info.get().unwrap().id == user_id() {
+                            self_token.set(None);
+                        }
+                        let _ = use_navigate(cx)(&Page::Home.path(None), Default::default());
+                    }
+                },
+                Err(err) => {
+                    log::error!("Failed to delete user: {}", err);
                 }
             }
         }
@@ -138,6 +169,9 @@ pub fn User(
 
     create_effect(cx, move |_| {
         log::debug!("loading user ID: {}", user_id());
+        if user_info.get().is_some() && user_id() == user_info.get().unwrap().id {
+            return;
+        }
         fetch_user_info.dispatch(());
         set_followers.update(|f| f.clear());
         set_following.update(|f| f.clear());
@@ -154,17 +188,30 @@ pub fn User(
                 <img src=move || user_info.get().unwrap().profile_picture />
                 <h3>{user_info.get().unwrap().username}</h3>
                 <p>{user_info.get().unwrap().about}</p>
-                {if self_info.get().is_some() && self_info.get().unwrap().id != user_id() {
-                    view! {cx, <>
-                        <button
-                            on:click=move|_| follow_or_unfollow.dispatch(())
-                        >
-                            <p>{if user_info.get().unwrap().you_follow {"unfollow"} else {"follow"}}</p>
-                        </button>
-                    </>}
-                } else {
-                    view! {cx, <></>}
-                }}
+                <div class="user_controls">
+                    {if self_info.get().is_some() && self_info.get().unwrap().id != user_id() {
+                        view! {cx, <>
+                            <button
+                                on:click=move|_| follow_or_unfollow.dispatch(())
+                            >
+                                <p>{if user_info.get().unwrap().you_follow {"unfollow"} else {"follow"}}</p>
+                            </button>
+                        </>}
+                    } else {
+                        view! {cx, <></>}
+                    }}
+                    {if self_info.get().is_some() && (self_info.get().unwrap().id == user_id() || self_info.get().unwrap().admin) {
+                        view! {cx, <>
+                            <button
+                                on:click=move|_| delete_user.dispatch(())
+                            >
+                                <p>"delete"</p>
+                            </button>
+                        </>}
+                    } else {
+                        view! {cx, <></>}
+                    }}
+                </div>
             </div>
             <div class="user_followers">
                 <p>"Followers:"</p>

@@ -20,10 +20,9 @@ const API_TOKEN_STORAGE_KEY: &str = "api-token";
 pub fn App(cx: Scope) -> impl IntoView {
     // -- signals -- //
 
-    let (token, set_token) = create_signal(cx, None::<ApiToken>);
+    let token = create_rw_signal(cx, None::<ApiToken>);
     let (user_info, set_user_info) = create_signal(cx, None::<types::UserInfo>);
     let darkmode = create_rw_signal(cx, true);
-    let logged_in = Signal::derive(cx, move || token.get().is_some());
 
     // -- actions -- //
 
@@ -44,7 +43,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     });
 
     let logout = create_action(cx, move |_| async move {
-        set_token.update(|a| *a = None);
+        token.update(|a| *a = None);
         set_user_info.set(None);
     });
 
@@ -59,25 +58,25 @@ pub fn App(cx: Scope) -> impl IntoView {
     if let Ok(token_storage) = LocalStorage::get::<ApiToken>(API_TOKEN_STORAGE_KEY) {
         log::debug!("{:?}", token_storage);
         if token_storage.exp() > chrono::Utc::now().timestamp() {
-            set_token.set(Some(token_storage));
+            token.set(Some(token_storage));
         }
     }
 
     let token_invalidation_handle = Arc::new(Mutex::new(None));
     // -- effects -- //
     create_effect(cx, move |_| match token.get() {
-        Some(token) => {
+        Some(t) => {
             let dur = Duration::from_secs(
-                (token.exp() - chrono::Utc::now().timestamp())
+                (t.exp() - chrono::Utc::now().timestamp())
                     .try_into()
                     .unwrap(),
             );
             log::debug!("Token ({:?}) expires in {:?}", token, dur);
-            LocalStorage::set(API_TOKEN_STORAGE_KEY, token).expect("LocalStorage::set");
+            LocalStorage::set(API_TOKEN_STORAGE_KEY, t).expect("LocalStorage::set");
             fetch_user_info.dispatch(());
             if let Ok(handle) = set_timeout_with_handle(
                 move || {
-                    set_token.set(None);
+                    token.set(None);
                     let _ = window().alert_with_message("Your login was invalidated");
                 },
                 dur,
@@ -127,7 +126,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                   <Login
                       on_success = move |t| {
                           log::info!("Successfully logged in");
-                          set_token.update(|v| *v = Some(t));
+                          token.update(|v| *v = Some(t));
                           let navigate = use_navigate(cx);
                           navigate(&Page::Home.path(None), Default::default()).expect("Home route");
                           fetch_user_info.dispatch(());
@@ -140,7 +139,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                   <Register
                       on_success = move |t| {
                           log::info!("Successfully registered and logged in");
-                          set_token.update(|v| *v = Some(t));
+                          token.update(|v| *v = Some(t));
                           let navigate = use_navigate(cx);
                           navigate(&Page::Home.path(None), Default::default()).expect("Home route");
                           fetch_user_info.dispatch(());
@@ -150,7 +149,7 @@ pub fn App(cx: Scope) -> impl IntoView {
               <Route
                 path=Page::Posts.path(None)
                 view=move |cx| view! { cx,
-                  <Posts user=user_info token=token/>
+                  <Posts user=user_info token=Signal::from(token)/>
               }/>
               <Route
                 path=Page::User.path(None)
