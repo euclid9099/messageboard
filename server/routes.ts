@@ -15,10 +15,13 @@ const router = new Router();
 router.get("/", ({ request, response }: { request: Request; response: Response }) => {
 	response.status = 200;
 	response.body = {
-		login: `${request.url.origin}/login`,
-		signup: `${request.url.origin}/signup`,
-		users: `${request.url.origin}/users`,
-		posts: `${request.url.origin}/posts`,
+		status: "ok",
+		links: {
+			login: `${request.url.origin}/login`,
+			signup: `${request.url.origin}/signup`,
+			users: `${request.url.origin}/users`,
+			posts: `${request.url.origin}/posts`,
+		},
 	};
 });
 
