@@ -3,23 +3,29 @@
 
     min-height: 100vh;
 
-    --bg-color: #eee;
-    --bg-color-soft: #ccc;
+    --bg-color: #ccc;
+    --bg-color-soft: #eee;
+    --bg-color-dark: #999;
     --font-color: #111;
     --admin-color: #FFD700;
-    --friend-color: cyan;
 
     #control-root {
         padding: 1.5vh;
         min-height: 97vh;
 
         font-family: 'Roboto';
+
+        main {
+            height: 100%;
+            padding-top: 5rem;
+        }
     }
 }
 
 .dark {
-    --bg-color: #111;
-    --bg-color-soft: #333;
+    --bg-color: #444;
+    --bg-color-soft: #666;
+    --bg-color-dark: #222;
     --font-color: #eee;
     background-color: var(--bg-color);
     color: var(--font-color);
@@ -30,9 +36,74 @@ nav {
     justify-items: center;
     align-items: center;
 
+    z-index: 10;
+
+    border-bottom: var(--bg-color-dark);
+    box-shadow: 0 0 2rem var(--bg-color-dark);
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - 2rem);
+    height: 3rem;
+
+    padding: 1rem;
+
     * {
         margin-left: 0.25rem;
         margin-right: 0.25rem;
+    }
+
+    .toggle-switch {
+        width: 2rem;
+        height: 1rem;
+
+        position: relative;
+
+        .darkmode-switch {
+            background-color: var(--bg-color);
+            box-shadow: 0 0 0.25rem var(--font-color);
+
+            width: 100%;
+            height: 100%;
+
+            position: absolute;
+            border-radius: 15rem;
+
+            input {
+                display: none;
+            }
+
+            .slider {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50px;
+                transition: 0.3s;
+
+                margin: 0;
+            }
+
+            input:checked~.slider {
+                background-color: var(--bg-color);
+            }
+
+            .slider::before {
+                content: "";
+                position: absolute;
+                top: 0.1rem;
+                left: 0.1rem;
+                width: 0.8rem;
+                height: 0.8rem;
+                border-radius: 50%;
+                background-color: var(--font-color);
+                transition: 0.3s;
+            }
+
+            input:checked~.slider::before {
+                transform: translateX(1rem);
+            }
+        }
     }
 }
 
@@ -61,56 +132,4 @@ p[contenteditable="true"] {
 
 a {
     color: var(--font-color);
-}
-
-.toggle-switch {
-    width: 2rem;
-    height: 1rem;
-
-    position: relative;
-
-    .darkmode-switch {
-        background-color: var(--bg-color);
-        box-shadow: 0 0 0.25rem var(--font-color);
-
-        width: 100%;
-        height: 100%;
-
-        position: absolute;
-        border-radius: 15rem;
-
-        input {
-            display: none;
-        }
-
-        .slider {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50px;
-            transition: 0.3s;
-
-            margin: 0;
-        }
-
-        input:checked~.slider {
-            background-color: var(--bg-color);
-        }
-
-        .slider::before {
-            content: "";
-            position: absolute;
-            top: 0.1rem;
-            left: 0.1rem;
-            width: 0.8rem;
-            height: 0.8rem;
-            border-radius: 50%;
-            background-color: var(--font-color);
-            transition: 0.3s;
-        }
-
-        input:checked~.slider::before {
-            transform: translateX(1rem);
-        }
-    }
 }

@@ -47,14 +47,16 @@ where
     let disabled = Signal::derive(cx, move || wait_for_response.get());
 
     view! { cx,
-      <CredentialsForm
-        title = "Register your account with desirde login and password"
-        action_label = "Register"
-        action = register_action
-        error = register_error.into()
-        disabled
-      />
-      <p>"Already have an account?"</p>
-      <A href=Page::Login.path(None)>"Login"</A>
+            <div  class="credential-form">
+            <CredentialsForm
+                title = "Register your account with desired login and password"
+                action_label = "Register"
+                action = register_action
+                error = register_error.into()
+                disabled
+            />
+            <p>"Already have an account?"</p>
+            <A href=Page::Login.path(None)>"Login"</A>
+        </div>
     }
 }
