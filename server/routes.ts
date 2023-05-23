@@ -1,6 +1,15 @@
 import { Router, Request, Response } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { login, signup } from "./controllers/security.ts";
-import { getUsers, getUser, editUser, followUser, unfollowUser, getUserFollowers, getUserFollowing, deleteUser } from "./controllers/user.ts";
+import {
+	getUsers,
+	getUser,
+	editUser,
+	followUser,
+	unfollowUser,
+	getUserFollowers,
+	getUserFollowing,
+	deleteUser,
+} from "./controllers/user.ts";
 import {
 	createPost,
 	getPosts,

@@ -30,10 +30,22 @@ const getUsers = async ({ response }: { response: Response }) => {
 	});
 };
 
-const getUser = async ({ params, request, response }: { params: { id: string }; request: Request; response: Response }) => {
+const getUser = async ({
+	params,
+	request,
+	response,
+}: {
+	params: { id: string };
+	request: Request;
+	response: Response;
+}) => {
 	await responseSkeleton(response, async () => {
 		return await Surreal.Instance.query(
-			`SELECT *, count(->follows->user.id) AS following, count(<-follows<-user.id) AS followers${request.url.searchParams.has("as") ? ", $self_id INSIDE <-follows<-user.id AS you_follow" : ""} FROM user WHERE id = $request_id`,
+			`SELECT *, count(->follows->user.id) AS following, count(<-follows<-user.id) AS followers${
+				request.url.searchParams.has("as")
+					? ", $self_id INSIDE <-follows<-user.id AS you_follow"
+					: ""
+			} FROM user WHERE id = $request_id`,
 			{
 				request_id: params.id,
 				self_id: request.url.searchParams.get("as") || "",
@@ -42,8 +54,16 @@ const getUser = async ({ params, request, response }: { params: { id: string }; 
 	});
 };
 
-const getUserFollowing = async ({ params, request, response }: { params: { id: string }; request: Request; response: Response }) => {
-	await responseSkeleton(response, async () => {		
+const getUserFollowing = async ({
+	params,
+	request,
+	response,
+}: {
+	params: { id: string };
+	request: Request;
+	response: Response;
+}) => {
+	await responseSkeleton(response, async () => {
 		const offset = parseInt(request.url.searchParams.get("offset") || "0") || 0;
 		return await Surreal.Instance.query(
 			`SELECT ->follows->user.id AS following FROM user WHERE (id=$request_id) LIMIT 15 START ${offset} FETCH following`,
@@ -54,8 +74,16 @@ const getUserFollowing = async ({ params, request, response }: { params: { id: s
 	});
 };
 
-const getUserFollowers = async ({ params, request, response }: { params: { id: string }; request: Request; response: Response }) => {
-	await responseSkeleton(response, async () => {		
+const getUserFollowers = async ({
+	params,
+	request,
+	response,
+}: {
+	params: { id: string };
+	request: Request;
+	response: Response;
+}) => {
+	await responseSkeleton(response, async () => {
 		const offset = parseInt(request.url.searchParams.get("offset") || "0") || 0;
 		return await Surreal.Instance.query(
 			`SELECT <-follows<-user.id AS followers FROM user WHERE (id=$request_id) LIMIT 15 START ${offset} FETCH followers`,
@@ -109,7 +137,7 @@ const deleteUser = async ({
 
 		return result;
 	});
-}
+};
 
 const followUser = async ({
 	params,
@@ -164,4 +192,13 @@ const unfollowUser = async ({
 	});
 };
 
-export { getUsers, getUser, editUser, deleteUser, followUser, unfollowUser, getUserFollowers, getUserFollowing };
+export {
+	getUsers,
+	getUser,
+	editUser,
+	deleteUser,
+	followUser,
+	unfollowUser,
+	getUserFollowers,
+	getUserFollowing,
+};

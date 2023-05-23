@@ -5,7 +5,7 @@ import Surreal from "https://deno.land/x/surrealdb@v0.2.0/mod.ts";
 import router from "./routes.ts";
 import { db_url } from "./helper.ts";
 
-const HOST = "127.0.0.1";
+const HOST = "0.0.0.0";
 const PORT = 7700;
 
 const app = new Application();

@@ -13,7 +13,7 @@ mod pages;
 mod types;
 
 use self::{components::*, pages::*, types::*};
-const DEFAULT_API_URL: &str = "http://127.0.0.1:7700";
+const DEFAULT_API_URL: &str = "http://10.10.1.218:7700";
 const API_TOKEN_STORAGE_KEY: &str = "api-token";
 
 #[component]
@@ -110,6 +110,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     view! { cx,
       <div id="control-root" class=move || if darkmode.get() {"dark"} else {"light"}>
+        <title>"Kornelja"</title>
         <Router>
           <NavBar logged_in=user_info on_logout darkmode/>
           <main>
